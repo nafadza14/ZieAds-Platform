@@ -12,10 +12,18 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
-  const logos = [
-    "Meta", "Google Ads", "TikTok", "LinkedIn", "Pinterest", "X", "Snapchat", "Bing",
-    "Meta", "Google Ads", "TikTok", "LinkedIn", "Pinterest", "X", "Snapchat", "Bing"
+  const brandLogos = [
+    { name: "Meta", url: "https://www.vectorlogo.zone/logos/meta/meta-icon.svg" },
+    { name: "TikTok", url: "https://www.vectorlogo.zone/logos/tiktok/tiktok-icon.svg" },
+    { name: "Google Ads", url: "https://www.vectorlogo.zone/logos/google_ads/google_ads-icon.svg" },
+    { name: "X", url: "https://www.vectorlogo.zone/logos/twitter/x-logo.svg" },
+    { name: "Snapchat", url: "https://www.vectorlogo.zone/logos/snapchat/snapchat-icon.svg" },
+    { name: "Pinterest", url: "https://www.vectorlogo.zone/logos/pinterest/pinterest-icon.svg" },
+    { name: "LinkedIn", url: "https://www.vectorlogo.zone/logos/linkedin/linkedin-icon.svg" },
   ];
+
+  // Increase the density of the scroll for a smoother effect
+  const scrollLogos = [...brandLogos, ...brandLogos, ...brandLogos, ...brandLogos];
 
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden text-slate-900">
@@ -54,8 +62,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         <div className="container mx-auto max-w-7xl grid lg:grid-cols-2 gap-16 items-center">
           
           <div className="space-y-8 animate-in slide-in-from-left-8 duration-700 relative z-10">
-            {/* Removed the trust badges as requested */}
-            
             <h1 className="text-5xl md:text-7xl font-extrabold leading-[1.1] tracking-tight">
               Create Ads That <br/><span className="text-teal-100">Convert, Effortlessly</span>
             </h1>
@@ -195,12 +201,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
       </section>
 
-      {/* Social Proof Carousel */}
-      <section className="py-12 bg-primary border-y border-teal-400 overflow-hidden">
-        <div className="animate-scroll whitespace-nowrap">
-          {logos.map((logo, idx) => (
-            <div key={idx} className="inline-flex items-center gap-2 mx-12 text-white/50 text-2xl font-black italic uppercase tracking-tighter hover:text-white transition-colors cursor-default">
-              {logo}
+      {/* Social Proof Carousel with Enlarged Official Logos - No text labels */}
+      <section className="py-16 bg-primary border-y border-teal-400 overflow-hidden">
+        <div className="animate-scroll whitespace-nowrap flex items-center">
+          {scrollLogos.map((logo, idx) => (
+            <div key={idx} className="inline-flex items-center mx-20 group transition-all">
+              <img 
+                src={logo.url} 
+                alt={logo.name} 
+                className="h-14 md:h-20 w-auto opacity-70 brightness-0 invert filter group-hover:opacity-100 group-hover:filter-none transition-all cursor-default scale-110 md:scale-125"
+                title={logo.name}
+              />
             </div>
           ))}
         </div>
