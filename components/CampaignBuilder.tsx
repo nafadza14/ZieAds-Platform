@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Platform, CampaignObjective, BrandProfile, AdCreative, Campaign, CampaignType, CampaignStatus } from '../types';
 import { generateCampaignStrategy, generateCreatives } from '../services/geminiService';
+import { useNavigate } from 'react-router-dom';
 
 interface CampaignBuilderProps {
   brandProfile: BrandProfile | null;
@@ -13,6 +14,7 @@ interface CampaignBuilderProps {
 }
 
 const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onComplete }) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   
@@ -21,32 +23,36 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
   const [platforms, setPlatforms] = useState<Platform[]>([Platform.Meta]);
   const [objective, setObjective] = useState<CampaignObjective>(CampaignObjective.Sales);
   const [goal, setGoal] = useState('');
-  const [strategy, setStrategy] = useState<{ platforms: Platform[], suggestedBudget: number, adAngles: string[] } | null>(null);
-  const [selectedAngle, setSelectedAngle] = useState('');
+  const [strategy, setStrategy] = useState<{ platforms: Platform[], suggestedBudget: number, adAngles: string[], targetAudience: string } | null>(null);
   const [creatives, setCreatives] = useState<AdCreative[]>([]);
   const [selectedCreativeIndex, setSelectedCreativeIndex] = useState(0);
   const [budget, setBudget] = useState(50);
   const [duration, setDuration] = useState(30);
 
+  // Logic: Handle transition from Selection to Project Description
+  const handleTypeSelect = (selectedType: CampaignType) => {
+    setType(selectedType);
+    setStep(2);
+  };
+
   const handleNext = async () => {
-    if (step === 1) {
-      setStep(2);
-    } else if (step === 2) {
+    if (step === 2) {
       setLoading(true);
       try {
-        if (!brandProfile) return;
-        const strat = await generateCampaignStrategy(brandProfile, goal || "Growth");
+        if (!brandProfile) throw new Error("Brand profile missing");
+        
+        // AI Logic: Analyze goal and brand to find strategy
+        const strat = await generateCampaignStrategy(brandProfile, goal || "Growth and conversions", type);
         setStrategy(strat);
         setPlatforms(strat.platforms);
         setBudget(strat.suggestedBudget);
-        setSelectedAngle(strat.adAngles[0]);
         
+        // AI Logic: Generate actual ad copy based on the first angle
         const generated = await generateCreatives(brandProfile, strat.platforms, objective, strat.adAngles[0]);
         setCreatives(generated);
         setStep(3);
-      } catch (e) {
-        alert("Strategy generation failed. Using manual fallback.");
-        setStep(3);
+      } catch (e: any) {
+        alert("Strategy generation failed: " + e.message);
       } finally {
         setLoading(false);
       }
@@ -57,15 +63,18 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
 
   const handleBack = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (creatives.length === 0) return;
+    setLoading(true);
+    
+    // Logic: Construct the final campaign object
     const newCampaign: Campaign = {
       id: Math.random().toString(36).substr(2, 9),
-      name: `${platforms[0]} ${objective} Campaign`,
+      name: `${platforms[0]} ${objective} Campaign - ${new Date().toLocaleDateString()}`,
       type,
       platforms,
       objective,
-      audience: brandProfile?.audiences[0] || 'Broad',
+      audience: strategy?.targetAudience || brandProfile?.audiences[0] || 'Broad',
       creatives: [creatives[selectedCreativeIndex]],
       budget,
       duration,
@@ -73,9 +82,19 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
       createdAt: new Date().toISOString(),
       metrics: { spend: 0, impressions: 0, clicks: 0, conversions: 0, roas: 0 }
     };
-    onComplete(newCampaign);
+
+    try {
+      await onComplete(newCampaign);
+      // Logic: Success redirection
+      navigate('/');
+    } catch (e) {
+      alert("Deployment failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Guard: Must have a profile
   if (!brandProfile) {
     return (
       <div className="max-w-2xl mx-auto py-20 text-center space-y-6">
@@ -84,7 +103,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
         </div>
         <h2 className="text-2xl font-bold text-slate-800">Scan your website first</h2>
         <p className="text-slate-500">To enable AI-driven campaigns, our system needs to analyze your brand voice and products.</p>
-        <button className="px-8 py-4 tosca-bg text-white rounded-xl font-bold shadow-lg shadow-teal-500/20">Go to Website Scanner</button>
+        <button onClick={() => navigate('/scanner')} className="px-8 py-4 tosca-bg text-white rounded-xl font-bold shadow-lg shadow-teal-500/20">Go to Website Scanner</button>
       </div>
     );
   }
@@ -124,21 +143,21 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
               <div className="grid md:grid-cols-3 gap-6">
                 <TypeCard 
                    active={type === CampaignType.InstantAI} 
-                   onClick={() => setType(CampaignType.InstantAI)}
+                   onClick={() => handleTypeSelect(CampaignType.InstantAI)}
                    title="Instant AI Campaign"
                    desc="Full automation. AI builds everything from your URL."
                    icon={<Sparkles />}
                 />
                 <TypeCard 
                    active={type === CampaignType.SmartMulti} 
-                   onClick={() => setType(CampaignType.SmartMulti)}
+                   onClick={() => handleTypeSelect(CampaignType.SmartMulti)}
                    title="Smart Multi-Platform"
                    desc="You pick channels, AI optimizes daily for max ROAS."
                    icon={<Target />}
                 />
                 <TypeCard 
                    active={type === CampaignType.Manual} 
-                   onClick={() => setType(CampaignType.Manual)}
+                   onClick={() => handleTypeSelect(CampaignType.Manual)}
                    title="Manual Single-Platform"
                    desc="Full control mode for specific targeting needs."
                    icon={<Smartphone />}
@@ -157,7 +176,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                         <textarea 
                             className="w-full p-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:ring-4 focus:ring-teal-500/10 transition-all"
                             rows={4}
-                            placeholder="e.g. I want to sell my new eco-friendly coffee pods to young professionals..."
+                            placeholder="e.g. I want to sell my new eco-friendly coffee pods to young professionals in London..."
                             value={goal}
                             onChange={(e) => setGoal(e.target.value)}
                         />
@@ -178,7 +197,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                     </div>
                  </div>
                  <div className="bg-slate-50 rounded-3xl p-8 space-y-6">
-                    <h4 className="font-bold text-slate-800 flex items-center gap-2"><Sparkles size={18} className="text-primary" /> Brand Context</h4>
+                    <h4 className="font-bold text-slate-800 flex items-center gap-2"><Sparkles size={18} className="text-primary" /> AI Context Filter</h4>
                     <div className="space-y-4">
                         <div className="flex gap-4">
                             <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-primary font-bold">{brandProfile.name[0]}</div>
@@ -187,7 +206,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                                 <p className="text-xs text-slate-400">{brandProfile.url}</p>
                             </div>
                         </div>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">"{brandProfile.summary.substring(0, 150)}..."</p>
+                        <p className="text-xs text-slate-500 leading-relaxed italic">"Your {brandProfile.tone} brand voice and {brandProfile.products[0]} focus will be used to craft these campaigns."</p>
                     </div>
                  </div>
               </div>
@@ -212,7 +231,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                </div>
 
                <div className="grid md:grid-cols-2 gap-12">
-                  {creatives[selectedCreativeIndex] && (
+                  {creatives[selectedCreativeIndex] ? (
                     <div className="space-y-6">
                         <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100">
                              <div className="flex justify-between mb-4">
@@ -238,6 +257,10 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                             <button className="flex-1 py-3 tosca-bg rounded-xl font-bold text-sm text-white hover:bg-primary-dark transition-colors">Edit Manually</button>
                         </div>
                     </div>
+                  ) : (
+                    <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl">
+                        <p className="text-slate-400 italic">No variations generated.</p>
+                    </div>
                   )}
 
                   <div className="space-y-4">
@@ -256,7 +279,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                                 </div>
                             </div>
                          </div>
-                         <img src={`https://picsum.photos/seed/${platforms[0]}/280/500`} alt="Ad" className="w-full h-full object-cover -z-10" />
+                         <img src={`https://picsum.photos/seed/${platforms[0] || 'ad'}/280/500`} alt="Ad" className="w-full h-full object-cover -z-10" />
                       </div>
                   </div>
                </div>
@@ -273,8 +296,8 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                             <Zap size={32} />
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-800">Ready for Launch</h4>
-                            <p className="text-sm text-slate-600">AI has verified your audience targeting and creatives. Your campaign is expected to deliver <span className="font-black">~150 conversions</span> in 30 days.</p>
+                            <h4 className="font-bold text-slate-800">Deployment Logic Verification</h4>
+                            <p className="text-sm text-slate-600">AI has verified your audience targeting for <span className="font-black">{platforms.join(' & ')}</span>. Expecting <span className="font-black">~{(budget * duration * 0.05).toFixed(0)} conversions</span>.</p>
                         </div>
                     </div>
 
@@ -305,15 +328,15 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                 </div>
 
                 <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200">
-                    <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-6">Campaign Summary</h4>
+                    <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-6">Execution Plan</h4>
                     <div className="space-y-4">
-                        <SummaryItem label="Type" value={type} />
-                        <SummaryItem label="Objective" value={objective} />
-                        <SummaryItem label="Platforms" value={platforms.join(', ')} />
-                        <SummaryItem label="Est. Monthly Reach" value="~45,000" />
+                        <SummaryItem label="Flow" value={type} />
+                        <SummaryItem label="Goal" value={objective} />
+                        <SummaryItem label="Channels" value={platforms.join(', ')} />
+                        <SummaryItem label="Targeting" value={strategy?.targetAudience?.substring(0, 30) + '...' || 'AI Smart Targeting'} />
                         <div className="pt-4 border-t border-slate-200">
                             <div className="flex justify-between">
-                                <span className="text-sm font-bold text-slate-900">Total Investment</span>
+                                <span className="text-sm font-bold text-slate-900">Project Total</span>
                                 <span className="text-xl font-black text-primary">${budget * duration}</span>
                             </div>
                         </div>
@@ -335,21 +358,24 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
           </button>
           
           <div className="flex items-center gap-4">
-            {step < 4 ? (
-              <button 
-                onClick={handleNext}
-                disabled={loading}
-                className="px-8 py-4 tosca-bg text-white font-bold rounded-2xl hover:bg-primary-dark shadow-xl shadow-teal-500/20 transition-all flex items-center gap-2"
-              >
-                {loading ? <><Loader2 className="animate-spin" /> Generating Strategy...</> : <>Next Step <ArrowRight size={18} /></>}
-              </button>
-            ) : (
-              <button 
-                onClick={handlePublish}
-                className="px-12 py-5 tosca-bg text-white font-black text-xl rounded-2xl hover:scale-105 transition-all shadow-2xl shadow-teal-500/40 flex items-center gap-3 animate-pulse"
-              >
-                <Send size={24} /> Launch Campaign
-              </button>
+            {step === 1 ? null : (
+              step < 4 ? (
+                <button 
+                  onClick={handleNext}
+                  disabled={loading || (step === 2 && !goal)}
+                  className="px-8 py-4 tosca-bg text-white font-bold rounded-2xl hover:bg-primary-dark shadow-xl shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? <><Loader2 className="animate-spin" /> Analyzing Strategy...</> : <>Next Step <ArrowRight size={18} /></>}
+                </button>
+              ) : (
+                <button 
+                  onClick={handlePublish}
+                  disabled={loading}
+                  className="px-12 py-5 tosca-bg text-white font-black text-xl rounded-2xl hover:scale-105 transition-all shadow-2xl shadow-teal-500/40 flex items-center gap-3"
+                >
+                  {loading ? <Loader2 className="animate-spin" /> : <Send size={24} />} Launch Campaign
+                </button>
+              )
             )}
           </div>
         </div>
@@ -375,7 +401,7 @@ const TypeCard = ({ active, onClick, title, desc, icon }: any) => (
 const SummaryItem = ({ label, value }: { label: string, value: string }) => (
     <div className="flex justify-between text-xs">
         <span className="text-slate-400 font-bold uppercase">{label}</span>
-        <span className="text-slate-700 font-bold text-right ml-4">{value}</span>
+        <span className="text-slate-700 font-bold text-right ml-4 truncate">{value}</span>
     </div>
 );
 

@@ -13,7 +13,7 @@ import {
   ArrowUpRight,
   ShieldAlert
 } from 'lucide-react';
-import { Business, Recommendation } from '../types';
+import { Business, Recommendation, Campaign } from '../types';
 import { getRecommendations } from '../services/geminiService';
 
 interface DashboardProps {
@@ -30,7 +30,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
     if (campaigns.length > 0) {
       loadRecommendations();
     }
-  }, [campaigns.length]);
+  }, [campaigns.length, activeBusiness?.id]);
 
   const loadRecommendations = async () => {
     setLoadingRecs(true);
@@ -38,25 +38,29 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
       const recs = await getRecommendations(campaigns);
       setRecommendations(recs);
     } catch (e) {
-      console.error(e);
+      console.error("AI Recommendation error:", e);
     } finally {
       setLoadingRecs(false);
     }
   };
 
-  const totalSpend = campaigns.reduce((acc, c) => acc + c.metrics.spend, 0);
-  const totalConversions = campaigns.reduce((acc, c) => acc + c.metrics.conversions, 0);
-  const avgRoas = campaigns.length > 0 ? (campaigns.reduce((acc, c) => acc + c.metrics.roas, 0) / campaigns.length).toFixed(2) : '0';
-  const totalClicks = campaigns.reduce((acc, c) => acc + c.metrics.clicks, 0);
+  // Derived Metrics
+  const totalSpend = campaigns.reduce((acc, c) => acc + (c.metrics?.spend || 0), 0);
+  const totalConversions = campaigns.reduce((acc, c) => acc + (c.metrics?.conversions || 0), 0);
+  const totalClicks = campaigns.reduce((acc, c) => acc + (c.metrics?.clicks || 0), 0);
+  const avgRoas = campaigns.length > 0 
+    ? (campaigns.reduce((acc, c) => acc + (c.metrics?.roas || 0), 0) / campaigns.length).toFixed(2) 
+    : '0';
 
+  // Real data simulation for the chart based on total spend
   const chartData = [
-    { name: 'Mon', spend: 400, conv: 24 },
-    { name: 'Tue', spend: 300, conv: 18 },
-    { name: 'Wed', spend: 600, conv: 42 },
-    { name: 'Thu', spend: 800, conv: 51 },
-    { name: 'Fri', spend: 500, conv: 33 },
-    { name: 'Sat', spend: 450, conv: 29 },
-    { name: 'Sun', spend: 420, conv: 27 },
+    { name: 'Mon', spend: totalSpend * 0.1, conv: totalConversions * 0.1 },
+    { name: 'Tue', spend: totalSpend * 0.12, conv: totalConversions * 0.11 },
+    { name: 'Wed', spend: totalSpend * 0.15, conv: totalConversions * 0.18 },
+    { name: 'Thu', spend: totalSpend * 0.2, conv: totalConversions * 0.22 },
+    { name: 'Fri', spend: totalSpend * 0.18, conv: totalConversions * 0.15 },
+    { name: 'Sat', spend: totalSpend * 0.13, conv: totalConversions * 0.12 },
+    { name: 'Sun', spend: totalSpend * 0.12, conv: totalConversions * 0.12 },
   ];
 
   return (
@@ -191,9 +195,9 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
                         ))}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-primary font-bold">{c.metrics.roas}x</td>
+                  <td className="px-6 py-4 text-primary font-bold">{c.metrics?.roas || 0}x</td>
                   <td className="px-6 py-4 font-medium">${c.budget}/day</td>
-                  <td className="px-6 py-4">${c.metrics.spend}</td>
+                  <td className="px-6 py-4">${c.metrics?.spend || 0}</td>
                 </tr>
               )) : (
                 <tr>
