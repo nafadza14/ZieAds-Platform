@@ -1,0 +1,8 @@
+{
+  "name": "ZieAds",
+  "description": "AI-powered multichannel advertising platform for SMBs to create, manage, and optimize ads in minutes.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
