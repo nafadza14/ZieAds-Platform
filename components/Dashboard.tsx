@@ -11,7 +11,9 @@ import {
   AlertCircle,
   Lightbulb,
   ArrowUpRight,
-  ShieldAlert
+  ShieldAlert,
+  ChevronRight,
+  Home
 } from 'lucide-react';
 import { Business, Recommendation, Campaign } from '../types';
 import { getRecommendations } from '../services/geminiService';
@@ -52,7 +54,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
     ? (campaigns.reduce((acc, c) => acc + (c.metrics?.roas || 0), 0) / campaigns.length).toFixed(2) 
     : '0';
 
-  // Real data simulation for the chart based on total spend
+  // Real data simulation for the chart
   const chartData = [
     { name: 'Mon', spend: totalSpend * 0.1, conv: totalConversions * 0.1 },
     { name: 'Tue', spend: totalSpend * 0.12, conv: totalConversions * 0.11 },
@@ -64,21 +66,37 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Unified Command Center</h1>
-          <p className="text-slate-500">Monitoring performance for <span className="font-bold text-primary">{activeBusiness?.name}</span></p>
-        </div>
-        <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-white px-4 py-2 rounded-full border border-slate-200">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                AI Optimization Live
-            </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-teal-600 bg-teal-50 px-4 py-2 rounded-full border border-teal-100">
-                <ShieldAlert size={14} />
-                Fraud Protection: Active
-            </div>
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans">
+      <header className="space-y-4">
+        {/* Breadcrumbs for Hierarchy */}
+        <nav className="flex items-center gap-2 text-[12px] font-semibold text-slate-400">
+          <div className="flex items-center gap-1.5 hover:text-slate-600 cursor-pointer transition-colors">
+            <Home size={14} />
+            <span>Home</span>
+          </div>
+          <ChevronRight size={12} className="opacity-50" />
+          <div className="flex items-center gap-1.5 hover:text-slate-600 cursor-pointer transition-colors">
+            <span>{activeBusiness?.name || 'Business'}</span>
+          </div>
+          <ChevronRight size={12} className="opacity-50" />
+          <span className="text-slate-900 font-bold">Overview</span>
+        </nav>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-display">Unified Command Center</h1>
+            <p className="text-slate-500 text-sm font-medium">Monitoring performance for <span className="font-bold text-primary">{activeBusiness?.name}</span></p>
+          </div>
+          <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-[12px] font-bold text-slate-500 bg-white px-4 py-2 rounded-full border border-slate-200">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  AI Optimization Live
+              </div>
+              <div className="flex items-center gap-2 text-[12px] font-bold text-primary bg-teal-50 px-4 py-2 rounded-full border border-teal-100">
+                  <ShieldAlert size={14} />
+                  Fraud Protection: Active
+              </div>
+          </div>
         </div>
       </header>
 
@@ -87,16 +105,16 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
         <MetricCard title="Total Spend" value={`$${totalSpend.toLocaleString()}`} icon={<DollarSign size={20} />} trend="+12.5%" />
         <MetricCard title="Total Clicks" value={totalClicks.toLocaleString()} icon={<MousePointer2 size={20} />} trend="+8.2%" trendColor="green" />
         <MetricCard title="Conversions" value={totalConversions.toLocaleString()} icon={<Users size={20} />} trend="+15.1%" trendColor="green" />
-        <MetricCard title="Avg. ROAS" value={`${avgRoas}x`} icon={<TrendingUp size={20} />} trend="+2.4%" trendColor="green" />
+        <MetricCard title="Avg. Roas" value={`${avgRoas}x`} icon={<TrendingUp size={20} />} trend="+2.4%" trendColor="green" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="lg:col-span-2 bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-bold text-slate-800">Performance Trends</h3>
+            <h3 className="text-lg font-extrabold text-slate-900 font-display">Performance Trends</h3>
             <div className="flex gap-2">
-                <span className="text-xs font-bold text-primary bg-teal-50 px-2 py-1 rounded">SPEND</span>
-                <span className="text-xs font-bold text-slate-400 px-2 py-1 rounded">CONVERSIONS</span>
+                <span className="text-[11px] font-bold text-primary bg-teal-50 px-2.5 py-1 rounded-full">Spend</span>
+                <span className="text-[11px] font-bold text-slate-400 px-2.5 py-1 rounded-full">Conversions</span>
             </div>
           </div>
           <div className="h-80 w-full">
@@ -109,10 +127,10 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} />
                 <Tooltip 
-                  contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                  contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)', fontSize: '12px'}}
                 />
                 <Area type="monotone" dataKey="spend" stroke="#14B8A6" strokeWidth={3} fillOpacity={1} fill="url(#colorSpend)" />
               </AreaChart>
@@ -120,70 +138,70 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 rounded-lg bg-teal-50 text-primary">
+        <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2.5 rounded-xl bg-teal-50 text-primary">
               <Lightbulb size={20} />
             </div>
-            <h3 className="text-lg font-bold text-slate-800">AI Recommendations</h3>
+            <h3 className="text-lg font-extrabold text-slate-900 font-display">AI Recommendations</h3>
           </div>
           
           <div className="flex-1 space-y-4">
             {loadingRecs ? (
               <div className="space-y-4">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="animate-pulse bg-slate-50 h-24 rounded-xl"></div>
+                  <div key={i} className="animate-pulse bg-slate-50 h-24 rounded-2xl"></div>
                 ))}
               </div>
             ) : recommendations.length > 0 ? (
               recommendations.map((rec) => (
-                <div key={rec.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-teal-200 transition-colors">
+                <div key={rec.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:border-teal-200 transition-all group">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-primary px-2 py-0.5 bg-teal-50 rounded">{rec.type}</span>
-                    <span className="text-[10px] font-bold text-green-600 flex items-center gap-1">
+                    <span className="text-[11px] font-bold text-primary px-2 py-0.5 bg-teal-50 rounded-lg">{rec.type}</span>
+                    <span className="text-[11px] font-bold text-green-600 flex items-center gap-1">
                       <ArrowUpRight size={14} /> {rec.impact}
                     </span>
                   </div>
                   <h4 className="font-bold text-slate-800 text-sm mb-1">{rec.title}</h4>
-                  <p className="text-[10px] text-slate-500 leading-relaxed">{rec.description}</p>
+                  <p className="text-[12px] text-slate-500 leading-relaxed font-medium">{rec.description}</p>
                 </div>
               ))
             ) : (
-              <div className="text-center py-12 px-4">
-                <AlertCircle className="mx-auto text-slate-300 mb-2" size={32} />
-                <p className="text-slate-400 text-sm">Launch a campaign to get AI insights.</p>
+              <div className="text-center py-12 px-4 flex flex-col items-center justify-center h-full">
+                <AlertCircle className="text-slate-300 mb-3" size={40} />
+                <p className="text-slate-400 text-sm font-medium">Launch a campaign to get AI insights.</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-800">Recent Campaigns</h3>
-          <button className="text-primary text-sm font-bold hover:underline">View All</button>
+          <h3 className="text-lg font-extrabold text-slate-900 font-display">Recent Campaigns</h3>
+          <button className="text-primary text-xs font-bold hover:underline font-sans">View all</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50/50 text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <tr className="bg-slate-50/50 text-[11px] font-bold text-slate-400 tracking-tight">
                 <th className="px-6 py-4">Campaign</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Platforms</th>
-                <th className="px-6 py-4">ROAS</th>
+                <th className="px-6 py-4">Roas</th>
                 <th className="px-6 py-4">Budget</th>
                 <th className="px-6 py-4">Spend</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {campaigns.length > 0 ? campaigns.map((c) => (
-                <tr key={c.id} className="text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                <tr key={c.id} className="text-sm text-slate-600 hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <p className="font-bold text-slate-800">{c.name}</p>
-                    <p className="text-[10px] text-slate-400">{c.type}</p>
+                    <p className="text-[11px] text-slate-400 font-medium">{c.type}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="flex items-center gap-1.5 capitalize">
+                    <span className="flex items-center gap-1.5 capitalize text-xs font-bold">
                       <span className={`w-2 h-2 rounded-full ${c.status === 'active' ? 'bg-green-500' : 'bg-slate-300'}`}></span>
                       {c.status}
                     </span>
@@ -191,17 +209,17 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
                   <td className="px-6 py-4">
                     <div className="flex gap-1">
                         {c.platforms.map(p => (
-                            <span key={p} className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold">{p}</span>
+                            <span key={p} className="px-2 py-0.5 rounded-lg bg-slate-100 text-[11px] font-bold text-slate-600 tracking-tight">{p}</span>
                         ))}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-primary font-bold">{c.metrics?.roas || 0}x</td>
-                  <td className="px-6 py-4 font-medium">${c.budget}/day</td>
-                  <td className="px-6 py-4">${c.metrics?.spend || 0}</td>
+                  <td className="px-6 py-4 font-bold text-slate-700 text-xs">${c.budget}/day</td>
+                  <td className="px-6 py-4 font-bold text-slate-700 text-xs">${c.metrics?.spend || 0}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No campaigns found.</td>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium italic">No campaigns found.</td>
                 </tr>
               )}
             </tbody>
@@ -213,15 +231,15 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness }) => {
 };
 
 const MetricCard = ({ title, value, icon, trend, trendColor = 'green' }: { title: string, value: string, icon: React.ReactNode, trend: string, trendColor?: string }) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+  <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm transition-all hover:shadow-md group">
     <div className="flex items-center justify-between mb-4">
-      <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600">
+      <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-500 group-hover:tosca-bg group-hover:text-white transition-all">
         {icon}
       </div>
-      <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${trendColor === 'green' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>{trend}</span>
+      <span className={`text-[11px] font-bold px-2 py-1 rounded-lg ${trendColor === 'green' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>{trend}</span>
     </div>
-    <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">{title}</h3>
-    <p className="text-2xl font-black text-slate-900">{value}</p>
+    <h3 className="text-slate-400 text-[11px] font-bold tracking-tight mb-1 font-sans">{title}</h3>
+    <p className="text-2xl font-extrabold text-slate-900 font-display tracking-tight">{value}</p>
   </div>
 );
 

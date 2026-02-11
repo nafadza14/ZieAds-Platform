@@ -45,7 +45,6 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
         setBudget(strat.suggestedBudget);
         
         const generated = await generateCreatives(brandProfile, strat.platforms, objective, strat.adAngles[0]);
-        // Map platforms to generated creatives
         const platformCreatives = generated.map((c, i) => ({
           ...c,
           platform: strat.platforms[i % strat.platforms.length]
@@ -80,8 +79,6 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
       };
 
       const publishedCampaign = await orchestrateCampaignPublish(campaignToPublish, creatives);
-      
-      // Update local state and redirect
       onComplete(publishedCampaign as any);
       navigate('/');
     } catch (e: any) {
@@ -93,13 +90,13 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
 
   if (!brandProfile) {
     return (
-      <div className="max-w-2xl mx-auto py-20 text-center space-y-6">
+      <div className="max-w-2xl mx-auto py-20 text-center space-y-6 font-sans">
         <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-300">
             <Globe size={32} />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800">Scan your website first</h2>
-        <p className="text-slate-500">To enable AI-driven campaigns, our system needs to analyze your brand voice and products.</p>
-        <button onClick={() => navigate('/scanner')} className="px-8 py-4 tosca-bg text-white rounded-xl font-bold shadow-lg shadow-teal-500/20">Go to Website Scanner</button>
+        <h2 className="text-2xl font-bold text-slate-800 font-display">Scan your website first</h2>
+        <p className="text-slate-500 font-medium">To enable AI-driven campaigns, our system needs to analyze your brand voice and products.</p>
+        <button onClick={() => navigate('/scanner')} className="px-8 py-4 tosca-bg text-white rounded-xl font-bold shadow-lg shadow-teal-500/20 font-display">Go to website scanner</button>
       </div>
     );
   }
@@ -112,7 +109,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in slide-in-from-right-4 duration-500">
+    <div className="max-w-5xl mx-auto space-y-8 animate-in slide-in-from-right-4 duration-500 font-sans">
       <div className="flex items-center justify-between max-w-2xl mx-auto">
         {steps.map((s, idx) => (
           <React.Fragment key={s.id}>
@@ -120,7 +117,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${step >= s.id ? 'tosca-bg text-white' : 'bg-slate-200 text-slate-400'}`}>
                 {s.id}
               </div>
-              <span className={`text-[10px] font-black uppercase tracking-widest ${step >= s.id ? 'text-primary' : 'text-slate-400'}`}>{s.name}</span>
+              <span className={`text-[11px] font-bold tracking-tight ${step >= s.id ? 'text-primary' : 'text-slate-400'}`}>{s.name}</span>
             </div>
             {idx < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 ${step > s.id ? 'tosca-bg' : 'bg-slate-100'}`}></div>}
           </React.Fragment>
@@ -132,28 +129,28 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
           {step === 1 && (
             <div className="space-y-8">
               <div className="text-center max-w-xl mx-auto">
-                <h2 className="text-3xl font-black text-slate-900 mb-2">Select Campaign Type</h2>
-                <p className="text-slate-500">Choose how much control you want over the optimization process.</p>
+                <h2 className="text-3xl font-extrabold text-slate-900 mb-2 font-display">Select Campaign Type</h2>
+                <p className="text-slate-500 font-medium">Choose how much control you want over the optimization process.</p>
               </div>
               <div className="grid md:grid-cols-3 gap-6">
                 <TypeCard active={type === CampaignType.InstantAI} onClick={() => handleTypeSelect(CampaignType.InstantAI)} title="Instant AI Campaign" desc="Full automation. AI builds everything from your URL." icon={<Sparkles />} />
-                <TypeCard active={type === CampaignType.SmartMulti} onClick={() => handleTypeSelect(CampaignType.SmartMulti)} title="Smart Multi-Platform" desc="You pick channels, AI optimizes daily for max ROAS." icon={<Target />} />
-                <TypeCard active={type === CampaignType.Manual} onClick={() => handleTypeSelect(CampaignType.Manual)} title="Manual Single-Platform" desc="Full control mode for specific targeting needs." icon={<Target />} />
+                <TypeCard active={type === CampaignType.SmartMulti} onClick={() => handleTypeSelect(CampaignType.SmartMulti)} title="Smart Multi-platform" desc="You pick channels, AI optimizes daily for max ROAS." icon={<Target />} />
+                <TypeCard active={type === CampaignType.Manual} onClick={() => handleTypeSelect(CampaignType.Manual)} title="Manual Single-platform" desc="Full control mode for specific targeting needs." icon={<Target />} />
               </div>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-8">
-              <h2 className="text-2xl font-black text-slate-900">Describe your project</h2>
+              <h2 className="text-2xl font-extrabold text-slate-900 font-display">Describe your project</h2>
               <div className="grid md:grid-cols-2 gap-12">
                  <div className="space-y-6">
                     <div>
-                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">What is your primary goal?</label>
-                        <textarea className="w-full p-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:ring-4 focus:ring-teal-500/10 transition-all" rows={4} placeholder="e.g. I want to sell my new eco-friendly coffee pods..." value={goal} onChange={(e) => setGoal(e.target.value)} />
+                        <label className="text-[11px] font-bold text-slate-400 tracking-wide mb-2 block uppercase">What is your primary goal?</label>
+                        <textarea className="w-full p-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:ring-4 focus:ring-teal-500/10 transition-all font-medium" rows={4} placeholder="e.g. I want to sell my new eco-friendly coffee pods..." value={goal} onChange={(e) => setGoal(e.target.value)} />
                     </div>
                     <div>
-                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Select Main Objective</label>
+                        <label className="text-[11px] font-bold text-slate-400 tracking-wide mb-2 block uppercase">Select main objective</label>
                         <div className="grid grid-cols-2 gap-3">
                             {Object.values(CampaignObjective).map(o => (
                                 <button key={o} onClick={() => setObjective(o)} className={`px-4 py-3 rounded-xl border text-sm font-bold transition-all ${objective === o ? 'border-primary bg-teal-50 text-primary' : 'border-slate-100 text-slate-500 hover:bg-slate-50'}`}>{o}</button>
@@ -162,8 +159,8 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                     </div>
                  </div>
                  <div className="bg-slate-50 rounded-3xl p-8 space-y-6">
-                    <h4 className="font-bold text-slate-800 flex items-center gap-2"><Sparkles size={18} className="text-primary" /> AI Context Filter</h4>
-                    <p className="text-xs text-slate-500 italic">"Your {brandProfile.tone} brand voice will be used to craft these campaigns."</p>
+                    <h4 className="font-bold text-slate-800 flex items-center gap-2 font-display"><Sparkles size={18} className="text-primary" /> AI Context Filter</h4>
+                    <p className="text-sm text-slate-500 italic">"Your {brandProfile.tone} brand voice will be used to craft these campaigns."</p>
                  </div>
               </div>
             </div>
@@ -172,7 +169,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
           {step === 3 && (
             <div className="space-y-8">
                <div className="flex items-center justify-between">
-                   <h2 className="text-2xl font-black text-slate-900">Select AI-generated ads</h2>
+                   <h2 className="text-2xl font-extrabold text-slate-900 font-display">Select AI-generated ads</h2>
                    <div className="flex gap-2">
                        {creatives.map((_, i) => (
                            <button key={i} onClick={() => setSelectedCreativeIndex(i)} className={`w-8 h-8 rounded-lg font-bold text-xs ${selectedCreativeIndex === i ? 'tosca-bg text-white' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</button>
@@ -183,11 +180,11 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                   <div className="space-y-6">
                       <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100">
                            <div className="flex justify-between mb-4">
-                              <span className="text-[10px] font-black text-teal-600 bg-teal-100 px-2 py-0.5 rounded uppercase">{creatives[selectedCreativeIndex]?.platform} AD VARIATION</span>
-                              <span className="text-primary font-black">{(creatives[selectedCreativeIndex]?.predictedCTR! * 100).toFixed(1)}% CTR</span>
+                              <span className="text-[10px] font-bold text-teal-600 bg-teal-100 px-2 py-0.5 rounded uppercase">{creatives[selectedCreativeIndex]?.platform} ad variation</span>
+                              <span className="text-primary font-bold">{(creatives[selectedCreativeIndex]?.predictedCTR! * 100).toFixed(1)}% Ctr</span>
                            </div>
-                           <p className="text-lg font-bold text-slate-900 mb-2">{creatives[selectedCreativeIndex]?.headline}</p>
-                           <p className="text-sm text-slate-600 leading-relaxed">{creatives[selectedCreativeIndex]?.primaryText}</p>
+                           <p className="text-lg font-bold text-slate-900 mb-2 font-display">{creatives[selectedCreativeIndex]?.headline}</p>
+                           <p className="text-sm text-slate-600 leading-relaxed font-medium">{creatives[selectedCreativeIndex]?.primaryText}</p>
                       </div>
                   </div>
                </div>
@@ -196,11 +193,11 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
 
           {step === 4 && (
             <div className="space-y-8">
-              <h2 className="text-2xl font-black text-slate-900">Launch your campaign</h2>
+              <h2 className="text-2xl font-extrabold text-slate-900 font-display">Launch your campaign</h2>
               <div className="p-8 bg-teal-50 rounded-3xl border border-teal-100 text-center">
                   <Send className="mx-auto text-primary mb-4" size={48} />
-                  <h3 className="text-xl font-bold text-slate-800">Ready to Publish</h3>
-                  <p className="text-slate-600">Your campaign will be deployed to {platforms.join(', ')} with a daily budget of ${budget}.</p>
+                  <h3 className="text-xl font-bold text-slate-800 font-display">Ready to publish</h3>
+                  <p className="text-slate-600 font-medium">Your campaign will be deployed to {platforms.join(', ')} with a daily budget of ${budget}.</p>
               </div>
             </div>
           )}
@@ -210,12 +207,12 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
           <button onClick={handleBack} disabled={step === 1 || loading} className="text-slate-500 font-bold disabled:opacity-0 flex items-center gap-2"><ArrowLeft size={18} /> Back</button>
           <div className="flex items-center gap-4">
             {step === 1 ? null : (step < 4 ? (
-              <button onClick={handleNext} disabled={loading || (step === 2 && !goal)} className="px-8 py-4 tosca-bg text-white font-bold rounded-2xl flex items-center gap-2">
-                {loading ? <><Loader2 className="animate-spin" /> Thinking...</> : <>Next Step <ArrowRight size={18} /></>}
+              <button onClick={handleNext} disabled={loading || (step === 2 && !goal)} className="px-8 py-4 tosca-bg text-white font-bold rounded-2xl flex items-center gap-2 font-display">
+                {loading ? <><Loader2 className="animate-spin" /> Thinking...</> : <>Next step <ArrowRight size={18} /></>}
               </button>
             ) : (
-              <button onClick={handlePublish} disabled={loading} className="px-12 py-5 tosca-bg text-white font-black text-xl rounded-2xl flex items-center gap-3">
-                {loading ? <Loader2 className="animate-spin" /> : <Send size={24} />} Launch Now
+              <button onClick={handlePublish} disabled={loading} className="px-12 py-5 tosca-bg text-white font-extrabold text-xl rounded-2xl flex items-center gap-3 font-display">
+                {loading ? <Loader2 className="animate-spin" /> : <Send size={24} />} Launch now
               </button>
             ))}
           </div>
@@ -228,8 +225,8 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
 const TypeCard = ({ active, onClick, title, desc, icon }: any) => (
   <button onClick={onClick} className={`p-8 rounded-[32px] border-2 text-left transition-all ${active ? 'border-primary bg-teal-50' : 'border-slate-100 bg-white hover:border-teal-100'}`}>
     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${active ? 'tosca-bg text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>{icon}</div>
-    <h3 className="text-lg font-bold mb-2">{title}</h3>
-    <p className="text-xs text-slate-500">{desc}</p>
+    <h3 className="text-lg font-bold mb-2 font-display">{title}</h3>
+    <p className="text-[13px] text-slate-500 font-medium">{desc}</p>
   </button>
 );
 

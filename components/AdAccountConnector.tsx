@@ -4,11 +4,9 @@ import {
   Target, 
   RefreshCw, 
   CheckCircle2, 
-  AlertCircle, 
-  ExternalLink,
-  Loader2,
-  Sparkles,
-  Lock,
+  Loader2, 
+  Sparkles, 
+  Lock, 
   Plus
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
@@ -37,7 +35,6 @@ const AdAccountConnector: React.FC = () => {
 
       if (error) throw error;
       
-      // Map DB fields to internal types
       const mapped = (data || []).map((acc: any) => ({
         id: acc.id,
         platform: acc.platform as Platform,
@@ -53,12 +50,10 @@ const AdAccountConnector: React.FC = () => {
   };
 
   const handleConnect = async (platform: Platform) => {
-    if (platform === Platform.LinkedIn) return; // Locked platform
+    if (platform === Platform.LinkedIn) return;
 
     setConnectingPlatform(platform);
     
-    // Simulate OAuth Redirect & Success
-    // In a real app, this would redirect to provider and come back to a callback route
     setTimeout(async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -77,10 +72,8 @@ const AdAccountConnector: React.FC = () => {
           }]);
 
         if (error) throw error;
-
         await fetchAccounts();
         
-        // Trigger Aha Moment
         setShowCelebration(true);
         setTimeout(() => setShowCelebration(false), 5000);
       } catch (err) {
@@ -91,16 +84,16 @@ const AdAccountConnector: React.FC = () => {
     }, 2000);
   };
 
-  const platforms = [
-    { id: Platform.Meta, label: 'Meta Ads', icon: 'Meta', desc: 'Facebook and Instagram' },
-    { id: Platform.Google, label: 'Google Ads', icon: 'Google', desc: 'Search, Display, and Video' },
-    { id: Platform.TikTok, label: 'TikTok Ads', icon: 'TikTok', desc: 'Short form viral video' },
-    { id: Platform.Bing, label: 'Bing Ads', icon: 'Bing', desc: 'Microsoft Search Network' },
-    { id: Platform.LinkedIn, label: 'LinkedIn Ads', icon: 'LinkedIn', desc: 'B2B and Professional', unavailable: true },
+  const platformsList = [
+    { id: Platform.Meta, label: 'Meta Ads', desc: 'Facebook and Instagram' },
+    { id: Platform.Google, label: 'Google Ads', desc: 'Search, Display, and Video' },
+    { id: Platform.TikTok, label: 'TikTok Ads', desc: 'Short form viral video' },
+    { id: Platform.Bing, label: 'Bing Ads', desc: 'Microsoft search network' },
+    { id: Platform.LinkedIn, label: 'LinkedIn Ads', desc: 'B2B and professional', unavailable: true },
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700 font-sans">
       {showCelebration && (
         <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
           <div className="bg-white/90 backdrop-blur-md p-12 rounded-[40px] shadow-2xl border border-primary/20 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
@@ -108,7 +101,7 @@ const AdAccountConnector: React.FC = () => {
               <Sparkles size={40} />
             </div>
             <div className="text-center">
-              <h2 className="text-3xl font-black text-slate-900 mb-2">Launch Celebration</h2>
+              <h2 className="text-3xl font-extrabold text-slate-900 mb-2 font-display">Launch Celebration</h2>
               <p className="text-slate-500 font-medium">Your ad account is connected successfully. Time to grow.</p>
             </div>
           </div>
@@ -117,17 +110,17 @@ const AdAccountConnector: React.FC = () => {
 
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 mb-2">Ad Account Hub</h1>
-          <p className="text-slate-500 font-medium">Connect and manage your multi platform advertising permissions from one secure vault.</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 mb-2 font-display tracking-tight">Ad Account Hub</h1>
+          <p className="text-slate-500 font-medium text-sm">Connect and manage your multi platform advertising permissions from one secure vault.</p>
         </div>
-        <div className="flex items-center gap-3 px-4 py-2 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+        <div className="flex items-center gap-2.5 px-4 py-2 bg-slate-900 rounded-full border border-slate-800 shadow-xl">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">AES 256 Encryption Active</span>
+          <span className="text-[11px] font-bold text-slate-400 tracking-wide">AES 256 Encryption active</span>
         </div>
       </header>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {platforms.map((p) => {
+        {platformsList.map((p) => {
           const connectedAccount = accounts.find(acc => acc.platform === p.id);
           const isConnecting = connectingPlatform === p.id;
           
@@ -149,8 +142,8 @@ const AdAccountConnector: React.FC = () => {
                       <Target size={28} />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900">{p.label}</h3>
-                      <p className="text-xs text-slate-400 font-medium">{p.desc}</p>
+                      <h3 className="text-xl font-bold text-slate-900 font-display">{p.label}</h3>
+                      <p className="text-[13px] text-slate-400 font-medium">{p.desc}</p>
                     </div>
                   </div>
 
@@ -158,19 +151,19 @@ const AdAccountConnector: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-xl w-fit">
                         <CheckCircle2 size={16} />
-                        <span className="text-xs font-bold">Connected</span>
+                        <span className="text-[11px] font-bold">Connected</span>
                       </div>
                       <p className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded w-fit">ID: {connectedAccount.accountId}</p>
                     </div>
                   ) : p.unavailable ? (
                     <div className="flex items-center gap-2 text-slate-400 bg-slate-200/50 px-3 py-1.5 rounded-xl w-fit">
                       <Lock size={14} />
-                      <span className="text-xs font-bold">Currently Unavailable</span>
+                      <span className="text-[11px] font-bold">Currently unavailable</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-slate-400 bg-slate-50 px-3 py-1.5 rounded-xl w-fit">
                       <RefreshCw size={14} className="animate-spin-slow" />
-                      <span className="text-xs font-bold">Pending Integration</span>
+                      <span className="text-[11px] font-bold">Pending integration</span>
                     </div>
                   )}
                 </div>
@@ -184,16 +177,15 @@ const AdAccountConnector: React.FC = () => {
                     <button 
                       onClick={() => handleConnect(p.id)}
                       disabled={isConnecting}
-                      className="px-6 py-3 tosca-bg text-white font-bold rounded-2xl shadow-lg shadow-teal-500/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+                      className="px-6 py-3 tosca-bg text-white font-bold rounded-2xl shadow-lg shadow-teal-500/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all font-display"
                     >
                       {isConnecting ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
-                      {isConnecting ? 'Linking...' : 'Connect Now'}
+                      {isConnecting ? 'Linking...' : 'Connect now'}
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Decorative Background */}
               <div className="absolute -bottom-6 -right-6 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
                 <Target size={120} />
               </div>
@@ -205,16 +197,16 @@ const AdAccountConnector: React.FC = () => {
       <div className="bg-slate-900 rounded-[40px] p-12 text-white relative overflow-hidden">
         <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <h2 className="text-3xl font-black leading-tight">Secure Multi Platform <br/><span className="tosca-text">Ads Management</span></h2>
-            <p className="text-slate-400 leading-relaxed">We use enterprise grade encryption to store your access tokens. ZieAds never sees your plain text credentials. All requests are proxied through our secure edge network.</p>
+            <h2 className="text-3xl font-extrabold leading-tight font-display">Secure Multi platform <br/><span className="tosca-text font-extrabold">Ads Management</span></h2>
+            <p className="text-slate-400 text-sm leading-relaxed font-medium">We use enterprise grade encryption to store your access tokens. ZieAds never sees your plain text credentials. All requests are proxied through our secure edge network.</p>
             <div className="flex gap-4">
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-2">
-                <span className="text-[10px] font-black uppercase text-teal-400 tracking-widest">Compliance</span>
-                <span className="text-sm font-bold">GDPR Ready</span>
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wide">Compliance</span>
+                <span className="text-sm font-bold">GDPR ready</span>
               </div>
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-2">
-                <span className="text-[10px] font-black uppercase text-teal-400 tracking-widest">Security</span>
-                <span className="text-sm font-bold">SOC2 Audited</span>
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wide">Security</span>
+                <span className="text-sm font-bold">SOC2 audited</span>
               </div>
             </div>
           </div>
