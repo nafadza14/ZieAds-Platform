@@ -25,17 +25,41 @@ export enum CampaignObjective {
 
 export type CampaignStatus = 'draft' | 'pending_review' | 'publishing' | 'active' | 'paused' | 'completed';
 
+export interface UserProfile {
+  id: string;
+  fullName: string;
+  companyName: string;
+  brandSummary: string;
+  brandVoice: string;
+  websiteUrl: string;
+  logoUrl?: string;
+}
+
+export interface AdAccount {
+  id: string;
+  platform: Platform;
+  accountId: string;
+  status: 'active' | 'error' | 'disconnected' | 'linked';
+  accountName?: string;
+}
+
 export interface BrandProfile {
   name: string;
   summary: string;
+  description: string;
   tone: string;
-  colors: string[];
+  primaryColor: string;
+  secondaryColor: string;
+  colors: string[]; // Keep for compatibility
   products: string[];
   audiences: string[];
   url?: string;
+  logoUrl?: string;
 }
 
 export interface AdCreative {
+  id?: string;
+  platform: Platform;
   headline: string;
   primaryText: string;
   cta: string;
@@ -45,6 +69,7 @@ export interface AdCreative {
 
 export interface Campaign {
   id: string;
+  user_id: string;
   name: string;
   type: CampaignType;
   platforms: Platform[];
@@ -77,11 +102,4 @@ export interface Recommendation {
   title: string;
   description: string;
   impact: string;
-}
-
-export interface ClickFraudStats {
-  scannedClicks: number;
-  blockedClicks: number;
-  blockedIps: number;
-  moneySaved: number;
 }

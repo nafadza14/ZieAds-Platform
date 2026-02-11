@@ -7,10 +7,11 @@ import {
   PlusCircle, 
   Settings, 
   LogOut,
-  Zap,
+  Target,
   ShieldAlert,
   Building2,
-  ChevronDown
+  ChevronDown,
+  UserCheck
 } from 'lucide-react';
 import { Business } from '../types';
 
@@ -25,6 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
   const navItems = [
     { to: '/builder', icon: PlusCircle, label: 'Create an Ad' },
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/accounts', icon: UserCheck, label: 'Ad Accounts' },
     { to: '/fraud', icon: ShieldAlert, label: 'Click Fraud Protection' },
     { to: '/businesses', icon: Building2, label: 'Businesses' },
     { to: '/scanner', icon: Globe, label: 'Website Scanner' },
@@ -36,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
       <div className="p-6">
         <div className="flex items-center gap-2 mb-8">
           <div className="w-8 h-8 rounded-lg tosca-bg flex items-center justify-center text-white">
-            <Zap size={18} fill="currentColor" />
+            <Target size={18} fill="currentColor" />
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-800">ZieAds</span>
         </div>
@@ -88,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
         <div className="mb-4 px-3 py-2 bg-slate-900 rounded-xl">
            <p className="text-[10px] font-bold text-teal-400 uppercase tracking-widest mb-1">Current Plan</p>
            <p className="text-sm text-white font-bold mb-2">Growth Plan</p>
-           <button className="text-[10px] font-black text-white hover:text-teal-400">UPGRADE NOW →</button>
+           <button className="text-[10px] font-black text-white hover:text-teal-400">Upgrade Now →</button>
         </div>
         <button
           onClick={onLogout}

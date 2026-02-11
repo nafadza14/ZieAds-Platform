@@ -7,33 +7,38 @@ import Sidebar from './components/Sidebar';
 import WebsiteScanner from './components/WebsiteScanner';
 import CampaignBuilder from './components/CampaignBuilder';
 import ClickFraudProtection from './components/ClickFraudProtection';
+import AdAccountConnector from './components/AdAccountConnector';
 import AuthPage from './components/AuthPage';
-import { Business, Campaign, BrandProfile } from './types';
+import { Business, Campaign, BrandProfile, UserProfile } from './types';
 import { supabase } from './services/supabaseClient';
+import { fetchUserProfile } from './services/dbService';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [activeBusinessId, setActiveBusinessId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchData(session.user.id);
-      else setLoading(false);
+      if (session) {
+        initData(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
         setShowAuth(false);
-        fetchData(session.user.id);
+        initData(session.user.id);
       } else {
         setBusinesses([]);
+        setUserProfile(null);
         setActiveBusinessId(null);
         setLoading(false);
       }
@@ -42,52 +47,53 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchData = async (userId: string) => {
+  const initData = async (userId: string) => {
     setLoading(true);
     try {
-      const { data: bizData, error: bizError } = await supabase
-        .from('businesses')
-        .select(`
-          *,
-          brand_profiles (*),
-          campaigns (*)
-        `)
-        .eq('user_id', userId);
-
-      if (bizError) throw bizError;
-
-      if (bizData && bizData.length > 0) {
-        const mapped = bizData.map(b => ({
-          id: b.id,
-          name: b.name,
-          brandProfile: b.brand_profiles[0] || null,
-          campaigns: b.campaigns || []
-        }));
-        setBusinesses(mapped);
-        setActiveBusinessId(mapped[0].id);
-      } else {
-        // Create initial business for the new user
-        const { data: newBiz, error: createError } = await supabase
-          .from('businesses')
-          .insert([{ name: 'My First Business', user_id: userId }])
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        
-        const initial: Business = {
-          id: newBiz.id,
-          name: newBiz.name,
-          brandProfile: null,
-          campaigns: []
-        };
-        setBusinesses([initial]);
-        setActiveBusinessId(initial.id);
-      }
+      const profile = await fetchUserProfile();
+      setUserProfile(profile);
+      await fetchData(userId);
     } catch (err) {
-      console.error('Error fetching data from Supabase:', err);
+      console.error("Init Error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchData = async (userId: string) => {
+    const { data: bizData, error: bizError } = await supabase
+      .from('businesses')
+      .select(`*, brand_profiles (*), campaigns (*)`)
+      .eq('user_id', userId);
+
+    if (bizError) throw bizError;
+
+    if (bizData && bizData.length > 0) {
+      const mapped = bizData.map(b => ({
+        id: b.id,
+        name: b.name,
+        brandProfile: b.brand_profiles[0] || null,
+        campaigns: (b.campaigns || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      }));
+      setBusinesses(mapped);
+      setActiveBusinessId(mapped[0].id);
+    } else {
+      const { data: newBiz, error: createError } = await supabase
+        .from('businesses')
+        .insert([{ name: 'My First Business', user_id: userId }])
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      
+      const initial: Business = {
+        id: newBiz.id,
+        name: newBiz.name,
+        brandProfile: null,
+        campaigns: []
+      };
+      setBusinesses([initial]);
+      setActiveBusinessId(initial.id);
     }
   };
 
@@ -99,56 +105,25 @@ const App: React.FC = () => {
 
   const updateActiveBusinessBrand = async (profile: BrandProfile) => {
     if (!activeBusinessId) return;
-
     try {
       const { error } = await supabase
         .from('brand_profiles')
-        .upsert([{ 
-          business_id: activeBusinessId,
-          ...profile
-        }], { onConflict: 'business_id' });
+        .upsert([{ business_id: activeBusinessId, ...profile }], { onConflict: 'business_id' });
 
       if (error) throw error;
-
-      setBusinesses(prev => prev.map(b => 
-        b.id === activeBusinessId ? { ...b, brandProfile: profile, name: profile.name } : b
-      ));
-
+      setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, brandProfile: profile, name: profile.name } : b));
       await supabase.from('businesses').update({ name: profile.name }).eq('id', activeBusinessId);
-      
     } catch (err) {
       console.error('Failed to update brand profile:', err);
     }
   };
 
   const addCampaignToActiveBusiness = async (campaign: Campaign) => {
+    // Just refresh local state after dbService orchestrates the publish
     if (!activeBusinessId) return;
-
-    try {
-      const { error } = await supabase
-        .from('campaigns')
-        .insert([{
-          business_id: activeBusinessId,
-          name: campaign.name,
-          type: campaign.type,
-          platforms: campaign.platforms,
-          objective: campaign.objective,
-          audience: campaign.audience,
-          creatives: campaign.creatives,
-          budget: campaign.budget,
-          duration: campaign.duration,
-          status: campaign.status,
-          metrics: campaign.metrics
-        }]);
-
-      if (error) throw error;
-
-      setBusinesses(prev => prev.map(b => 
-        b.id === activeBusinessId ? { ...b, campaigns: [campaign, ...b.campaigns] } : b
-      ));
-    } catch (err) {
-      console.error('Failed to save campaign:', err);
-    }
+    setBusinesses(prev => prev.map(b => 
+      b.id === activeBusinessId ? { ...b, campaigns: [campaign, ...b.campaigns] } : b
+    ));
   };
 
   const switchBusiness = (id: string) => setActiveBusinessId(id);
@@ -158,7 +133,7 @@ const App: React.FC = () => {
       <div className="h-screen w-full flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
            <div className="w-12 h-12 tosca-bg rounded-xl animate-bounce"></div>
-           <p className="font-bold text-slate-400">ZieAds Syncing...</p>
+           <p className="font-bold text-slate-400 tracking-widest text-xs uppercase">ZieAds Core Sync</p>
         </div>
       </div>
     );
@@ -172,15 +147,11 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="flex h-screen overflow-hidden bg-slate-50">
-        <Sidebar 
-          onLogout={handleLogout} 
-          activeBusiness={activeBusiness} 
-          businesses={businesses} 
-          onSwitchBusiness={switchBusiness} 
-        />
+        <Sidebar onLogout={handleLogout} activeBusiness={activeBusiness} businesses={businesses} onSwitchBusiness={switchBusiness} />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <Routes>
             <Route path="/" element={<Dashboard activeBusiness={activeBusiness} />} />
+            <Route path="/accounts" element={<AdAccountConnector />} />
             <Route path="/fraud" element={<ClickFraudProtection />} />
             <Route path="/scanner" element={<WebsiteScanner onScanComplete={updateActiveBusinessBrand} currentProfile={activeBusiness?.brandProfile || null} />} />
             <Route path="/builder" element={<CampaignBuilder brandProfile={activeBusiness?.brandProfile || null} onComplete={addCampaignToActiveBusiness} />} />

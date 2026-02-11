@@ -6,27 +6,49 @@ export const scanWebsite = async (url: string): Promise<BrandProfile> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Analyze this website URL: ${url}. Provide a high-level brand marketing profile. Identify core products, target demographics, and brand tone.`,
+    contents: `Analyze the text and meta-tags of this URL: ${url}. Return a marketing profile in JSON format.
+    Extract:
+    1. business_name: The company name.
+    2. description: A compelling core value proposition (max 800 chars).
+    3. primary_color: A detect primary brand HEX color.
+    4. secondary_color: A detect secondary brand HEX color.
+    5. tone: Brand voice personality.
+    6. products: List of key products or services.
+    7. audiences: Potential target audience segments.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          name: { type: Type.STRING },
-          summary: { type: Type.STRING },
+          business_name: { type: Type.STRING },
+          description: { type: Type.STRING },
           tone: { type: Type.STRING },
-          colors: { type: Type.ARRAY, items: { type: Type.STRING } },
+          primary_color: { type: Type.STRING },
+          secondary_color: { type: Type.STRING },
           products: { type: Type.ARRAY, items: { type: Type.STRING } },
           audiences: { type: Type.ARRAY, items: { type: Type.STRING } },
         },
-        required: ["name", "summary", "tone", "colors", "products", "audiences"],
+        required: ["business_name", "description", "tone", "primary_color", "secondary_color", "products", "audiences"],
       },
     },
   });
 
   const text = response.text?.trim();
   if (!text) throw new Error("AI failed to return content for website scan.");
-  return { ...JSON.parse(text), url };
+  const data = JSON.parse(text);
+  
+  return { 
+    name: data.business_name,
+    summary: data.description,
+    description: data.description,
+    tone: data.tone,
+    primaryColor: data.primary_color || '#14B8A6',
+    secondaryColor: data.secondary_color || '#1E293B',
+    colors: [data.primary_color, data.secondary_color],
+    products: data.products,
+    audiences: data.audiences,
+    url 
+  };
 };
 
 export const generateCampaignStrategy = async (

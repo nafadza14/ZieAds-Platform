@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { Zap, Loader2, ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Target, Loader2, ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react';
 
 interface AuthPageProps {
   onBack: () => void;
@@ -40,7 +40,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
       <div className="max-w-md w-full animate-in zoom-in-95 duration-300">
         <div className="text-center mb-8">
           <button onClick={onBack} className="flex items-center gap-2 text-white/70 hover:text-white mb-8 mx-auto font-bold transition-colors">
-            <Zap size={20} /> ZieAds
+            <Target size={20} /> ZieAds
           </button>
           <h1 className="text-3xl font-black text-white mb-2">
             {isLogin ? 'Welcome Back' : 'Get Started Free'}
