@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
+import UseCasesPage from './components/UseCasesPage';
 import Dashboard from './components/Dashboard';
 import Sidebar from './components/Sidebar';
 import WebsiteScanner from './components/WebsiteScanner';
@@ -119,7 +120,6 @@ const App: React.FC = () => {
   };
 
   const addCampaignToActiveBusiness = async (campaign: Campaign) => {
-    // Just refresh local state after dbService orchestrates the publish
     if (!activeBusinessId) return;
     setBusinesses(prev => prev.map(b => 
       b.id === activeBusinessId ? { ...b, campaigns: [campaign, ...b.campaigns] } : b
@@ -141,7 +141,15 @@ const App: React.FC = () => {
 
   if (!session) {
     if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
-    return <LandingPage onLogin={() => setShowAuth(true)} />;
+    return (
+      <Router>
+        <Routes>
+          <Route path="/" element={<LandingPage onLogin={() => setShowAuth(true)} />} />
+          <Route path="/use-cases" element={<UseCasesPage />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Router>
+    );
   }
 
   return (
