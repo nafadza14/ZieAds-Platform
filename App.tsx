@@ -21,6 +21,19 @@ const App: React.FC = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [activeBusinessId, setActiveBusinessId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -127,10 +140,11 @@ const App: React.FC = () => {
   };
 
   const switchBusiness = (id: string) => setActiveBusinessId(id);
+  const toggleTheme = () => setIsDarkMode(prev => !prev);
 
   if (loading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors">
         <div className="flex flex-col items-center gap-4">
            <div className="w-12 h-12 tosca-bg rounded-xl animate-bounce"></div>
            <p className="font-bold text-slate-400 tracking-widest text-xs uppercase">ZieAds Core Sync</p>
@@ -154,11 +168,11 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="flex h-screen overflow-hidden bg-slate-50">
+      <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
         <Sidebar onLogout={handleLogout} activeBusiness={activeBusiness} businesses={businesses} onSwitchBusiness={switchBusiness} />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <Routes>
-            <Route path="/" element={<Dashboard activeBusiness={activeBusiness} />} />
+            <Route path="/" element={<Dashboard activeBusiness={activeBusiness} toggleTheme={toggleTheme} isDarkMode={isDarkMode} />} />
             <Route path="/accounts" element={<AdAccountConnector />} />
             <Route path="/fraud" element={<ClickFraudProtection />} />
             <Route path="/scanner" element={<WebsiteScanner onScanComplete={updateActiveBusinessBrand} currentProfile={activeBusiness?.brandProfile || null} />} />

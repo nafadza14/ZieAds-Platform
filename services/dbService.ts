@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { Campaign, AdCreative, UserProfile } from '../types';
+import { Campaign, AdCreative, UserProfile, ClickLog, FraudSummary, Platform } from '../types';
 
 export const orchestrateCampaignPublish = async (
   campaign: Partial<Campaign>,
@@ -91,4 +91,25 @@ export const updateUserProfile = async (profile: Partial<UserProfile>) => {
     });
 
   if (error) throw error;
+};
+
+export const fetchClickLogs = async (businessId: string): Promise<ClickLog[]> => {
+  // Mock data implementation for demonstration
+  return [
+    { id: '1', businessId, ipAddress: '192.168.1.45', userAgent: 'Mozilla/5.0...', fingerprint: 'hash_1', threatType: 'Bot Behavior', platform: Platform.Meta, timestamp: '2 mins ago' },
+    { id: '2', businessId, ipAddress: '45.12.8.192', userAgent: 'Mozilla/5.0...', fingerprint: 'hash_2', threatType: 'Suspicious IP', platform: Platform.Google, timestamp: '14 mins ago' },
+    { id: '3', businessId, ipAddress: '88.192.34.11', userAgent: 'Mozilla/5.0...', fingerprint: 'hash_3', threatType: 'Repeated Click', platform: Platform.TikTok, timestamp: '1 hour ago' },
+    { id: '4', businessId, ipAddress: '2.100.45.12', userAgent: 'Mozilla/5.0...', fingerprint: 'hash_4', threatType: 'Proxy/VPN', platform: Platform.Meta, timestamp: '3 hours ago' },
+  ];
+};
+
+export const fetchFraudSummary = async (businessId: string): Promise<FraudSummary> => {
+  // Mock data implementation
+  return {
+    businessId,
+    totalScannedClicks: 14534,
+    totalFraudBlocked: 1451,
+    excludedIpsCount: 491,
+    moneySaved: 748.50
+  };
 };

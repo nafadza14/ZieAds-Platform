@@ -103,3 +103,24 @@ export interface Recommendation {
   description: string;
   impact: string;
 }
+
+export type ThreatType = 'Bot Behavior' | 'Repeated Click' | 'Proxy/VPN' | 'Suspicious IP';
+
+export interface ClickLog {
+  id: string;
+  businessId: string;
+  ipAddress: string;
+  userAgent: string;
+  fingerprint: string;
+  threatType: ThreatType;
+  platform: Platform;
+  timestamp: string;
+}
+
+export interface FraudSummary {
+  businessId: string;
+  totalScannedClicks: number;
+  totalFraudBlocked: number;
+  excludedIpsCount: number;
+  moneySaved: number;
+}

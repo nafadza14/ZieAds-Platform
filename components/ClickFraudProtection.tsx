@@ -1,112 +1,243 @@
 
-import React from 'react';
-import { ShieldAlert, ShieldCheck, Info, Ban, RefreshCw, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  ShieldAlert, 
+  ShieldCheck, 
+  Info, 
+  Ban, 
+  RefreshCw, 
+  ExternalLink,
+  Zap,
+  Fingerprint,
+  Globe,
+  Loader2,
+  Code2,
+  Copy,
+  CheckCircle2,
+  MousePointerClick,
+  Clock
+} from 'lucide-react';
+import { ClickLog, FraudSummary, Platform } from '../types';
+import { fetchClickLogs, fetchFraudSummary } from '../services/dbService';
 
 const ClickFraudProtection: React.FC = () => {
-  const stats = {
-    scanned: 14534,
-    blocked: 1451,
-    ips: 491,
-    saved: 748
+  const [logs, setLogs] = useState<ClickLog[]>([]);
+  const [summary, setSummary] = useState<FraudSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [logsData, summaryData] = await Promise.all([
+          fetchClickLogs('current_business'),
+          fetchFraudSummary('current_business')
+        ]);
+        setLogs(logsData);
+        setSummary(summaryData);
+      } catch (e) {
+        console.error("Error loading fraud data:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const handleSync = () => {
+    setSyncing(true);
+    setTimeout(() => setSyncing(false), 2000);
   };
 
-  const logs = [
-    { id: 1, type: 'Bot Behavior', ip: '192.168.1.45', time: '2 mins ago', platform: 'Meta' },
-    { id: 2, type: 'Suspicious IP', ip: '45.12.8.192', time: '14 mins ago', platform: 'Google' },
-    { id: 3, type: 'Repeated Click', ip: '88.192.34.11', time: '1 hour ago', platform: 'TikTok' },
-    { id: 4, type: 'Proxy/VPN', ip: '2.100.45.12', time: '3 hours ago', platform: 'Meta' },
-  ];
+  const copyScript = () => {
+    const script = `<script src="https://cdn.zieads.com/tracker.js" data-id="ZA-8821-X" async></script>`;
+    navigator.clipboard.writeText(script);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (loading || !summary) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-20 space-y-4 font-sans bg-slate-50 dark:bg-slate-950 transition-colors">
+        <Loader2 size={40} className="animate-spin text-primary" />
+        <p className="text-slate-400 dark:text-slate-500 font-bold tracking-tight text-sm">Syncing threat intelligence...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 font-sans">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl tosca-bg flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
-             <ShieldAlert size={24} />
+    <div className="space-y-8 animate-in fade-in duration-700 font-sans">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl tosca-bg flex items-center justify-center text-white shadow-2xl shadow-teal-500/30">
+             <ShieldAlert size={28} />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 font-display tracking-tight">Click Fraud Protection</h1>
-            <p className="text-slate-500 text-sm font-medium">AI is monitoring your campaigns 24/7 for suspicious activity.</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white font-display tracking-tight leading-none mb-1 transition-colors">Click fraud protection</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Monitoring device fingerprints and behavioral patterns 24/7.</p>
           </div>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all font-sans">
-             <RefreshCw size={16} /> Sync blocks
+          <button 
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-sm"
+          >
+             <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> 
+             {syncing ? 'Syncing...' : 'Sync blocks'}
           </button>
-          <button className="px-4 py-2 tosca-bg text-white rounded-xl text-sm font-bold shadow-lg shadow-teal-500/20 font-sans">
-             Settings
+          <button className="px-6 py-2.5 tosca-bg text-white rounded-xl text-sm font-bold shadow-xl shadow-teal-500/20 hover:scale-105 active:scale-95 transition-all">
+             Global settings
           </button>
         </div>
       </header>
 
+      {/* Hero Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricBox label="Scanned clicks" value={stats.scanned.toLocaleString()} color="blue" />
-        <MetricBox label="Fraud blocked" value={stats.blocked.toLocaleString()} color="red" />
-        <MetricBox label="Excluded IPs" value={stats.ips.toLocaleString()} color="orange" />
-        <MetricBox label="Money saved" value={`$${stats.saved}`} color="green" />
+        <MetricBox 
+          label="Scanned clicks" 
+          value={summary.totalScannedClicks.toLocaleString()} 
+          color="#1E293B" 
+          icon={<Globe size={18} />}
+        />
+        <MetricBox 
+          label="Fraud blocked" 
+          value={summary.totalFraudBlocked.toLocaleString()} 
+          color="#EF4444" 
+          icon={<Ban size={18} />}
+        />
+        <MetricBox 
+          label="Excluded IPs" 
+          value={summary.excludedIpsCount.toLocaleString()} 
+          color="#F97316" 
+          icon={<Fingerprint size={18} />}
+        />
+        <MetricBox 
+          label="Money saved" 
+          value={`$${summary.moneySaved.toLocaleString()}`} 
+          color="#14B8A6" 
+          icon={<Zap size={18} />}
+        />
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8">
-         <div className="md:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-               <h3 className="font-bold text-slate-800 font-display">Recent block history</h3>
-               <span className="text-[11px] font-bold text-primary bg-teal-50 px-3 py-1 rounded-full">Real-time</span>
+      <div className="grid lg:grid-cols-3 gap-8">
+         {/* Recent History Table */}
+         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors">
+            <div className="p-7 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+               <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display tracking-tight transition-colors">Recent click logs</h3>
+               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-500/10 rounded-full border border-green-100 dark:border-green-500/20 transition-colors">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-[11px] font-bold text-green-700 dark:text-green-400 tracking-tight">Live behavioral analysis</span>
+               </div>
             </div>
             <div className="overflow-x-auto">
                <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-[11px] font-bold tracking-tight text-slate-400">
+                  <thead className="bg-slate-50/50 dark:bg-slate-800/50 text-[11px] font-bold tracking-tight text-slate-400 dark:text-slate-500">
                      <tr>
-                        <th className="px-6 py-4">Threat type</th>
-                        <th className="px-6 py-4">IP Address</th>
-                        <th className="px-6 py-4">Platform</th>
-                        <th className="px-6 py-4">Time</th>
-                        <th className="px-6 py-4"></th>
+                        <th className="px-7 py-4">Threat type</th>
+                        <th className="px-7 py-4">IP Address</th>
+                        <th className="px-7 py-4">Platform</th>
+                        <th className="px-7 py-4">Detected</th>
+                        <th className="px-7 py-4"></th>
                      </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                      {logs.map(log => (
-                        <tr key={log.id} className="text-xs font-medium hover:bg-slate-50 transition-colors">
-                           <td className="px-6 py-4">
-                              <span className="flex items-center gap-2 font-bold text-slate-700">
-                                 <Ban size={12} className="text-red-500" /> {log.type}
+                        <tr key={log.id} className="text-[13px] font-medium hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                           <td className="px-7 py-5">
+                              <span className="flex items-center gap-2.5 font-bold text-slate-700 dark:text-slate-300 font-display">
+                                 <div className={`w-2 h-2 rounded-full ${log.threatType === 'Bot Behavior' ? 'bg-red-500' : 'bg-orange-500'}`}></div>
+                                 {log.threatType}
                               </span>
                            </td>
-                           <td className="px-6 py-4 text-slate-500 font-mono">{log.ip}</td>
-                           <td className="px-6 py-4 font-bold text-slate-700">{log.platform}</td>
-                           <td className="px-6 py-4 text-slate-400">{log.time}</td>
-                           <td className="px-6 py-4 text-right">
-                              <button className="text-slate-300 hover:text-primary"><ExternalLink size={14} /></button>
+                           <td className="px-7 py-5 text-slate-500 dark:text-slate-400 font-mono tracking-tight">{log.ipAddress}</td>
+                           <td className="px-7 py-5">
+                              <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-400 tracking-tight transition-colors">
+                                 {log.platform}
+                              </span>
+                           </td>
+                           <td className="px-7 py-5 text-slate-400 dark:text-slate-500">{log.timestamp}</td>
+                           <td className="px-7 py-5 text-right">
+                              <button className="p-2 rounded-lg text-slate-300 dark:text-slate-600 hover:text-primary dark:hover:text-teal-400 transition-all">
+                                 <ExternalLink size={16} />
+                              </button>
                            </td>
                         </tr>
                      ))}
                   </tbody>
                </table>
             </div>
+            <div className="mt-auto p-4 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 text-center transition-colors">
+               <button className="text-[12px] font-bold text-slate-400 dark:text-slate-500 hover:text-primary dark:hover:text-teal-400 transition-colors tracking-tight">View deep analysis report</button>
+            </div>
          </div>
 
          <div className="space-y-6">
-            <div className="bg-slate-900 rounded-3xl p-8 text-white">
-               <ShieldCheck className="text-teal-400 mb-4" size={32} />
-               <h3 className="text-xl font-bold mb-2 font-display">Automated exclusions</h3>
-               <p className="text-sm text-slate-400 leading-relaxed mb-6 font-medium">Our AI automatically pushes blocked IPs and device fingerprints to your Meta and Google ad account exclusion lists every 15 minutes.</p>
-               <div className="space-y-3">
-                  <div className="flex justify-between text-[11px] font-semibold">
-                     <span className="text-slate-500">Last Sync:</span>
-                     <span className="text-teal-400">Just now</span>
+            {/* Tracking Script Onboarding */}
+            <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm p-8 space-y-6 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-500/10 text-primary dark:text-teal-400 flex items-center justify-center">
+                  <Code2 size={20} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display transition-colors">Install tracking code</h3>
+              </div>
+              <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                Paste this script into the <code>&lt;head&gt;</code> of your website to enable sidik jari perangkat and behavioral monitoring.
+              </p>
+              <div className="relative group">
+                <div className="w-full bg-slate-900 dark:bg-slate-950 text-teal-400 p-5 rounded-2xl font-mono text-[11px] break-all border border-slate-800 dark:border-slate-800 leading-relaxed group-hover:bg-slate-800 dark:group-hover:bg-slate-900 transition-colors">
+                  &lt;script src="https://cdn.zieads.com/tracker.js" data-id="ZA-8821-X" async&gt;&lt;/script&gt;
+                </div>
+                <button 
+                  onClick={copyScript}
+                  className="absolute top-3 right-3 p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all active:scale-95"
+                  title="Copy to clipboard"
+                >
+                  {copied ? <CheckCircle2 size={16} className="text-teal-400" /> : <Copy size={16} />}
+                </button>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                <CheckCircle2 size={12} className="text-green-500 dark:text-green-400" />
+                <span>Device Fingerprinting enabled</span>
+              </div>
+            </div>
+
+            {/* Automated Exclusions Card */}
+            <div className="bg-slate-900 dark:bg-slate-950 rounded-[32px] p-8 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20 transition-colors">
+               <div className="absolute top-0 right-0 w-32 h-32 tosca-bg/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000"></div>
+               <ShieldCheck className="text-teal-400 mb-6 group-hover:rotate-6 transition-transform" size={40} />
+               <h3 className="text-xl font-bold mb-3 font-display tracking-tight transition-colors">Automated exclusion sync</h3>
+               <p className="text-[13px] text-slate-400 leading-relaxed mb-8 font-medium transition-colors">Flagged IPs are automatically synced to Meta 'ip_exclusions' and Google 'IpBlock' lists every 15 minutes.</p>
+               
+               <div className="space-y-4 pt-6 border-t border-white/10 font-sans">
+                  <div className="flex justify-between items-center text-[12px] font-bold">
+                     <span className="text-slate-500">Exclusion status</span>
+                     <div className="flex items-center gap-1.5 text-green-400 bg-green-400/10 px-3 py-1 rounded-full">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                        <span>Active & Healthy</span>
+                     </div>
                   </div>
-                  <div className="flex justify-between text-[11px] font-semibold">
-                     <span className="text-slate-500">Sync Status:</span>
-                     <span className="text-green-400">Healthy</span>
+                  <div className="flex justify-between items-center text-[12px] font-bold">
+                     <span className="text-slate-500">Last 15m sync</span>
+                     <span className="text-teal-400 font-display transition-colors">Just now</span>
                   </div>
                </div>
             </div>
 
-            <div className="p-8 bg-white rounded-3xl border border-slate-200">
-               <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold font-display">
-                  <Info size={18} className="text-blue-500" />
-                  <h4>How it works</h4>
+            <div className="p-8 bg-slate-50/50 dark:bg-slate-900/50 rounded-[32px] border border-slate-200 dark:border-slate-800 border-dashed relative group hover:bg-white dark:hover:bg-slate-900 transition-all">
+               <div className="flex items-center gap-3 mb-4 text-slate-900 dark:text-white font-bold font-display transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-blue-500 dark:text-blue-400 flex items-center justify-center">
+                     <Info size={18} />
+                  </div>
+                  <h4 className="tracking-tight">Threat thresholds</h4>
                </div>
-               <p className="text-[12px] text-slate-500 leading-relaxed font-medium">We analyze incoming traffic patterns and block clicks that show non-human behavior, repeated attempts from the same IP, or traffic from known malicious VPN networks.</p>
+               <div className="space-y-4">
+                 <ThresholdItem icon={<Clock size={14}/>} label="Repeated click" value="> 3 clicks in 60s" />
+                 <ThresholdItem icon={<MousePointerClick size={14}/>} label="Bot behavior" value="Headless signature" />
+                 <ThresholdItem icon={<ShieldCheck size={14}/>} label="Proxy/VPN" value="Known datacenter IPs" />
+               </div>
             </div>
          </div>
       </div>
@@ -114,20 +245,45 @@ const ClickFraudProtection: React.FC = () => {
   );
 };
 
-const MetricBox = ({ label, value, color }: { label: string, value: string, color: string }) => {
-   const colors: any = {
-      blue: 'text-blue-600 bg-blue-50',
-      red: 'text-red-600 bg-red-50',
-      orange: 'text-orange-600 bg-orange-50',
-      green: 'text-green-600 bg-green-50'
-   };
-   return (
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-         <p className="text-[11px] font-bold text-slate-400 mb-1">{label}</p>
-         <p className={`text-2xl font-extrabold font-display ${colors[color].split(' ')[0]}`}>{value}</p>
-         <div className={`mt-3 h-1 w-10 rounded-full ${colors[color].split(' ')[1]}`}></div>
+const ThresholdItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) => (
+  <div className="flex items-center justify-between text-[11px]">
+    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold tracking-tight transition-colors">
+      {icon} {label}
+    </div>
+    <span className="text-slate-900 dark:text-slate-200 font-bold font-display transition-colors">{value}</span>
+  </div>
+);
+
+interface MetricBoxProps {
+  label: string;
+  value: string;
+  color: string;
+  icon: React.ReactNode;
+}
+
+const MetricBox: React.FC<MetricBoxProps> = ({ label, value, color, icon }) => {
+  return (
+    <div className="bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm relative group hover:shadow-xl transition-all duration-500 overflow-hidden">
+      <div 
+        className="absolute top-0 left-0 w-1.5 h-full opacity-0 group-hover:opacity-100 transition-opacity" 
+        style={{ backgroundColor: color }}
+      ></div>
+      <div className="flex items-center justify-between mb-5">
+         <p className="text-[12px] font-bold text-slate-400 dark:text-slate-500 tracking-tight font-sans uppercase opacity-60 transition-colors">{label}</p>
+         <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110"
+            style={{ backgroundColor: `${color}10`, color: color }}
+         >
+            {icon}
+         </div>
       </div>
-   );
+      <p className="text-3xl font-extrabold font-display tracking-tight text-slate-900 dark:text-white group-hover:translate-x-1 transition-all duration-300">{value}</p>
+      <div 
+        className="mt-5 h-1 w-12 rounded-full opacity-20" 
+        style={{ backgroundColor: color }}
+      ></div>
+    </div>
+  );
 };
 
 export default ClickFraudProtection;
