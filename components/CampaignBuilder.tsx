@@ -69,11 +69,12 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
     
     try {
       const campaignToPublish = {
+        business_id: (brandProfile as any)?.business_id, // Safely pass business_id if present
         name: `${platforms[0]} ${objective} Campaign - ${new Date().toLocaleDateString()}`,
         type,
         platforms,
         objective,
-        audience: strategy?.targetAudience || brandProfile?.audiences[0] || 'Broad',
+        audience: strategy?.targetAudience || (brandProfile?.audiences && brandProfile.audiences[0]) || 'Broad',
         budget,
         duration,
       };
@@ -160,7 +161,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                  </div>
                  <div className="bg-slate-50 rounded-3xl p-8 space-y-6">
                     <h4 className="font-bold text-slate-800 flex items-center gap-2 font-display"><Sparkles size={18} className="text-primary" /> AI Context Filter</h4>
-                    <p className="text-sm text-slate-500 italic">"Your {brandProfile.tone} brand voice will be used to craft these campaigns."</p>
+                    <p className="text-sm text-slate-500 italic">"Your {brandProfile.tone || 'professional'} brand voice will be used to craft these campaigns."</p>
                  </div>
               </div>
             </div>

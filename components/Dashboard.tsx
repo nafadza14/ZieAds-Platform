@@ -81,7 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
               <span>{activeBusiness?.name || 'Business'}</span>
             </div>
             <ChevronRight size={12} className="opacity-50" />
-            <span className="text-slate-900 dark:text-white font-semibold transition-colors">Dashboard overview</span>
+            <span className="text-slate-900 dark:text-white font-semibold transition-colors">Overview</span>
           </nav>
 
           <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-full transition-all relative">
@@ -107,9 +107,9 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold text-[#111827] dark:text-slate-100 tracking-[-0.02em] mb-1 transition-colors">Unified Command Center</h1>
+            <h1 className="text-3xl font-semibold text-[#111827] dark:text-slate-100 tracking-[-0.02em] mb-1 transition-colors">Business Performance</h1>
             <p className="text-[#4B5563] dark:text-slate-400 font-normal text-base transition-colors">
-              Performance monitoring for <span className="font-semibold text-primary">{activeBusiness?.name}</span>
+              Monitoring active campaigns for <span className="font-semibold text-primary">{activeBusiness?.name}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -125,7 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
         </div>
       </header>
 
-      {/* Metric Cards - Using Tabular Nums */}
+      {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="Total spend" value={`$${totalSpend.toLocaleString()}`} icon={<DollarSign size={20} />} trend="+12.5%" />
         <MetricCard title="Total clicks" value={totalClicks.toLocaleString()} icon={<MousePointer2 size={20} />} trend="+8.2%" trendColor="green" />
@@ -136,7 +136,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Performance Trends</h3>
+            <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Growth Trends</h3>
             <div className="flex gap-2 font-medium text-[11px] uppercase tracking-wider">
                 <span className="text-primary dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-2.5 py-1 rounded-full">Spend</span>
                 <span className="text-slate-400 dark:text-slate-500 px-2.5 py-1 rounded-full">Conversions</span>
@@ -211,7 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
 
       <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         <div className="p-7 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Recent Campaigns</h3>
+          <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Active Campaigns</h3>
           <button className="text-primary dark:text-teal-400 text-xs font-bold hover:underline transition-colors uppercase tracking-[0.1em]">View all</button>
         </div>
         <div className="overflow-x-auto">

@@ -25,6 +25,8 @@ import {
   Instagram
 } from 'lucide-react';
 
+const LOGO_URL = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgNTAiPgogIDxyZWN0IHg9IjYwIiB5PSI1IiB3aWR0aD0iOTUiIGhlaWdodD0iNDAiIGZpbGw9IiMxNEI4QTYiLz4KICA8dGV4dCB4PSIwIiB5PSIzOCIgZmlsbD0iIzE0QjhBNiIgc3R5bGU9ImZvbnQ6Ym9sZCAzOHB4ICdQbHVzIEpha2FydGEgU2FucycsIHNhbnMtc2VyaWYiPlppZTwvdGV4dD4KICA8dGV4dCB4PSI2NSIgeT0iMzgiIGZpbGw9IiNmZmZmZmYiIHN0eWxlPSJmb250OmJvbGQgMzhweCAnUGx1cyBKYWthcnRhIFNhbnMnLCBzYW5zLXNlcmlmIj5BZHMuPC90ZXh0Pgo8L3N2Zz4=";
+
 /* --- Shared Animation Variants --- */
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 40 },
@@ -61,20 +63,17 @@ const floating: Variants = {
 
 const Nav = ({ onLogin }: { onLogin: () => void }) => (
   <nav className="absolute top-0 left-0 right-0 z-[100] px-6 py-6 flex items-center justify-between max-w-7xl mx-auto">
-    <div className="flex items-center gap-2">
-      <div className="w-9 h-9 rounded-xl bg-white shadow-xl flex items-center justify-center text-primary">
-        <Target size={22} fill="currentColor" />
-      </div>
-      <span className="text-xl font-bold tracking-tighter text-white font-display">ZieAds</span>
+    <div className="flex items-center">
+      <img src={LOGO_URL} alt="ZieAds Logo" className="h-10 md:h-12 w-auto object-contain hover:scale-105 transition-transform cursor-pointer" />
     </div>
-    <div className="hidden md:flex items-center gap-8 font-sans font-medium text-[0.875rem] tracking-[0.01em] text-[#CBD5E1]">
+    <div className="hidden md:flex items-center gap-8 font-sans font-medium text-[0.875rem] tracking-[0.01em] text-slate-600">
       {["Features", "Integrations", "Pricing", "FAQ"].map((item) => (
-        <a key={item} href={`#${item.toLowerCase()}`} className="hover:text-white transition-colors uppercase tracking-widest">{item}</a>
+        <a key={item} href={`#${item.toLowerCase()}`} className="hover:text-primary transition-colors uppercase tracking-widest">{item}</a>
       ))}
     </div>
     <div className="flex items-center gap-4">
-      <button onClick={onLogin} className="text-[0.938rem] font-sans font-semibold text-white hover:text-teal-200 transition-colors px-4">Login</button>
-      <button onClick={onLogin} className="bg-white text-primary px-6 py-2.5 rounded-full text-[0.938rem] font-sans font-semibold shadow-xl shadow-black/10 hover:scale-105 active:scale-95 transition-all">Start Free Trial</button>
+      <button onClick={onLogin} className="text-[0.938rem] font-sans font-semibold text-primary hover:text-primary-dark transition-colors px-4">Login</button>
+      <button onClick={onLogin} className="tosca-bg text-white px-6 py-2.5 rounded-full text-[0.938rem] font-sans font-semibold shadow-xl shadow-teal-500/10 hover:scale-105 active:scale-95 transition-all">Start Free Trial</button>
     </div>
   </nav>
 );
@@ -111,12 +110,12 @@ const FloatingBrandLogo = ({ src, delay = 0, initialX = 0, initialY = 0 }: { src
         delay: delay,
         ease: "easeInOut"
       }}
-      className="absolute z-0 pointer-events-none hidden lg:block"
+      className="absolute z-0 pointer-events-none hidden lg:block opacity-20 grayscale"
     >
       <img 
         src={src} 
         alt="Platform" 
-        className="h-24 md:h-32 w-auto object-contain brightness-110 drop-shadow-[0_10px_30px_rgba(255,255,255,0.3)]" 
+        className="h-24 md:h-32 w-auto object-contain brightness-90 drop-shadow-[0_10px_30px_rgba(0,0,0,0.1)]" 
       />
     </motion.div>
   );
@@ -128,23 +127,23 @@ const GlowingCTAButton = ({ onLogin }: { onLogin: () => void }) => {
       variants={fadeUp}
       className="relative group p-[6px] rounded-[26px] overflow-hidden shadow-2xl"
     >
-      {/* Moving border trail - White color, sharp tip, long fading trail */}
+      {/* Moving border trail - Primary color for contrast on white */}
       <motion.div 
         animate={{ rotate: 360 }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-[-400%] bg-[conic-gradient(from_0deg,transparent_0%,rgba(255,255,255,0.1)_10%,rgba(255,255,255,0.9)_20%,rgba(255,255,255,1)_21%,transparent_22%)] opacity-100"
+        className="absolute inset-[-400%] bg-[conic-gradient(from_0deg,transparent_0%,rgba(20,184,166,0.1)_10%,rgba(20,184,166,0.9)_20%,#14B8A6_21%,transparent_22%)] opacity-100"
       />
       
-      {/* Extra glow layer for thicker spread - blurred white trail */}
+      {/* Extra glow layer */}
       <motion.div 
         animate={{ rotate: 360 }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-[-400%] bg-[conic-gradient(from_0deg,transparent_0%,rgba(255,255,255,0.4)_15%,white_20%,transparent_25%)] opacity-100 blur-2xl"
+        className="absolute inset-[-400%] bg-[conic-gradient(from_0deg,transparent_0%,rgba(20,184,166,0.4)_15%,#14B8A6_20%,transparent_25%)] opacity-100 blur-2xl"
       />
 
       <button 
         onClick={onLogin} 
-        className="relative px-12 py-6 rounded-[20px] bg-white text-primary font-sans font-semibold text-[0.938rem] hover:scale-[1.01] active:scale-95 transition-all flex items-center gap-3 z-10"
+        className="relative px-12 py-6 rounded-[20px] tosca-bg text-white font-sans font-semibold text-[0.938rem] hover:scale-[1.01] active:scale-95 transition-all flex items-center gap-3 z-10"
       >
         Start Free Trial — 14 Days <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
       </button>
@@ -164,10 +163,10 @@ const Hero = ({ onLogin }: { onLogin: () => void }) => {
   };
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center tosca-gradient text-white overflow-hidden text-center px-6">
+    <section className="relative min-h-screen flex flex-col items-center justify-center bg-white text-slate-900 overflow-hidden text-center px-6">
       <Nav onLogin={onLogin} />
       
-      {/* Platform Branding Animation - Drifting randomly across the section */}
+      {/* Platform Branding Animation */}
       <FloatingBrandLogo src={logos.meta} delay={0} initialX={-600} initialY={-250} />
       <FloatingBrandLogo src={logos.google} delay={2} initialX={550} initialY={-300} />
       <FloatingBrandLogo src={logos.tiktok} delay={4} initialX={-700} initialY={150} />
@@ -177,27 +176,27 @@ const Hero = ({ onLogin }: { onLogin: () => void }) => {
       <FloatingBrandLogo src={logos.google} delay={3.5} initialX={-350} initialY={-400} />
       <FloatingBrandLogo src={logos.tiktok} delay={5} initialX={200} initialY={-450} />
 
-      <motion.div variants={floating} animate="animate" className="absolute top-[20%] right-[10%] w-64 h-64 bg-white/10 blur-[100px] rounded-full z-0" />
+      <motion.div variants={floating} animate="animate" className="absolute top-[20%] right-[10%] w-64 h-64 bg-teal-500/5 blur-[100px] rounded-full z-0" />
       <motion.div variants={floating} animate="animate" className="absolute bottom-[20%] left-[5%] w-80 h-80 bg-teal-300/10 blur-[120px] rounded-full z-0" />
       
-      <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-5xl relative z-10 space-y-10">
-        <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 font-sans font-medium text-[0.75rem] text-[#CBD5E1] uppercase tracking-[0.05em] mb-4">
-          <Sparkles size={14} className="text-teal-300" /> AI-First Multi-Platform Advertising
+      <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-7xl relative z-10 space-y-10">
+        <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-50 backdrop-blur-md border border-teal-100 font-sans font-medium text-[0.75rem] text-primary uppercase tracking-[0.05em] mb-4">
+          <Sparkles size={14} className="text-primary" /> AI-First Multi-Platform Advertising
         </motion.div>
         
         <motion.h1 
           variants={fadeUp} 
-          className="font-display font-extrabold text-[clamp(2.5rem,5vw,4.5rem)] tracking-[-0.04em] leading-[1.1] text-transparent bg-clip-text bg-gradient-to-br from-white to-[#94A3B8]"
-          style={{ textShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
+          className="font-display font-extrabold text-[clamp(4rem,9vw,6.5rem)] tracking-[-0.04em] leading-[1.05] tosca-text"
+          style={{ textShadow: '0 4px 15px rgba(20,184,166,0.1)' }}
         >
           Create Ads That<br/>Convert, Effortlessly.
         </motion.h1>
         
         <motion.p 
           variants={fadeUp} 
-          className="font-sans font-normal text-[1.125rem] leading-[1.7] text-[#CBD5E1] max-w-2xl mx-auto"
+          className="font-sans font-normal text-[1.125rem] md:text-[1.375rem] leading-[1.7] text-slate-500 max-w-3xl mx-auto"
         >
-          Build winning campaigns in minutes across Meta, Google, TikTok, and more—even if you've never run ads before.
+          Build winning campaigns in minutes across Meta, Google, TikTok, and more—even if you've never run ads before. The future of automated growth is here.
         </motion.p>
         
         <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
@@ -221,17 +220,24 @@ const VisualShowcase = () => {
   const carouselItems = [...works, ...works, ...works];
 
   return (
-    <section className="py-24 md:py-32 bg-white overflow-hidden">
+    <section className="py-24 md:py-32 bg-slate-50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 mb-16 text-center lg:text-left">
         <motion.h2 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="font-display font-bold text-[2rem] tracking-[-0.03em] text-[#111827] leading-tight"
+          className="font-display font-bold text-[3rem] tracking-[-0.03em] text-[#111827] leading-tight mb-8"
         >
-          You’ve probably seen our work.<br/>
-          <span className="text-[#94A3B8]">You just didn’t know it was AI.</span>
+          Create your simple ads.
         </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="font-sans font-normal text-[1.125rem] leading-[1.8] text-[#64748B] max-w-4xl mb-12"
+        >
+          High-performance advertising doesn't need to be complex. ZieAds simplifies the entire creative and distribution process by leveraging advanced neural networks that understand your specific business objectives. By removing the technical barriers of ad management, we empower every brand to produce agency-quality content that speaks directly to their audience. Our platform doesn't just generate images and text; it synthesizes a coherent marketing strategy tailored to the unique algorithms of Meta, Google, and TikTok. Launch impactful campaigns that actually drive revenue, all while reducing your manual overhead by up to 90%. Simple, smart, and built for conversion.
+        </motion.p>
       </div>
 
       <div className="relative">
@@ -269,7 +275,7 @@ const WorkflowSteps = () => {
     { title: "One-Click Publish", desc: "Go live globally in under 5 minutes." }
   ];
   return (
-    <section id="features" className="py-24 md:py-32 bg-slate-50">
+    <section id="features" className="py-24 md:py-32 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-20 items-center">
           <div className="space-y-10">
@@ -287,11 +293,11 @@ const WorkflowSteps = () => {
               ))}
             </div>
           </div>
-          <div className="relative p-8 bg-white rounded-[48px] shadow-2xl border border-slate-100 flex items-center justify-center">
-             <div className="space-y-6 w-full max-w-sm">
-                <div className="w-full h-48 bg-slate-100 rounded-3xl animate-pulse" />
-                <div className="h-4 bg-slate-100 rounded-full w-3/4" />
-                <div className="h-4 bg-slate-100 rounded-full w-1/2" />
+          <div className="relative p-8 bg-slate-50 rounded-[48px] shadow-2xl border border-slate-100 flex items-center justify-center">
+             <div className="space-y-6 w-full max-sm:max-w-sm">
+                <div className="w-full h-48 bg-slate-200 rounded-3xl animate-pulse" />
+                <div className="h-4 bg-slate-200 rounded-full w-3/4" />
+                <div className="h-4 bg-slate-200 rounded-full w-1/2" />
                 <div className="pt-4 flex gap-4">
                    <div className="h-12 flex-1 rounded-2xl tosca-bg opacity-20" />
                    <div className="h-12 flex-1 rounded-2xl bg-slate-900 opacity-10" />
@@ -306,7 +312,7 @@ const WorkflowSteps = () => {
 
 // Section 4: All-in-One Tool Overview
 const ToolOverview = () => (
-  <section className="py-24 md:py-32 bg-white text-center">
+  <section className="py-24 md:py-32 bg-slate-50 text-center">
     <div className="max-w-5xl mx-auto px-6 space-y-12">
       <h2 className="font-display font-bold text-[2rem] md:text-[3rem] tracking-[-0.03em] text-[#111827]">Every content type.<br/><span className="tosca-text">One Engine.</span></h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -316,7 +322,7 @@ const ToolOverview = () => (
           { label: "Carousel Ads", icon: Layers },
           { label: "Display Banners", icon: Layout }
         ].map((item) => (
-          <div key={item.label} className="p-8 md:p-10 rounded-[40px] bg-slate-50 border border-slate-100 hover:scale-105 transition-all duration-500 group">
+          <div key={item.label} className="p-8 md:p-10 rounded-[40px] bg-white border border-slate-100 hover:scale-105 transition-all duration-500 group">
             <item.icon className="mx-auto mb-6 text-slate-400 group-hover:text-primary transition-colors" size={40} />
             <h4 className="font-sans font-semibold text-[#111827] text-sm md:text-lg">{item.label}</h4>
           </div>
@@ -516,9 +522,8 @@ const MegaFooter = () => (
   <footer className="py-24 bg-[#0F172A] text-white border-t border-white/5">
     <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 lg:grid-cols-5 gap-16">
       <div className="lg:col-span-1 space-y-8">
-        <div className="flex items-center gap-2">
-          <Target size={28} className="text-teal-400" />
-          <span className="text-3xl font-bold tracking-tighter font-display">ZieAds</span>
+        <div className="flex items-center">
+          <img src={LOGO_URL} alt="ZieAds Logo" className="h-10 w-auto object-contain" />
         </div>
         <p className="font-sans font-normal text-sm leading-[1.7] text-[#94A3B8]">The world's simplest AI advertising engine. Scale your growth without the agency fee.</p>
       </div>

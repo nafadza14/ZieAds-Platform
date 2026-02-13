@@ -6,16 +6,15 @@ import {
   BarChart3, Target, Sparkles, Zap, ShieldCheck 
 } from 'lucide-react';
 
+const LOGO_URL = "https://i.pinimg.com/736x/e6/3d/aa/e63daaceb34de0af110a18ef9ff2d3c1.jpg";
+
 const UseCasesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       <nav className="flex items-center justify-between px-6 md:px-12 py-5 bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100">
         <Link to="/" className="flex items-center gap-2">
           <ArrowLeft size={20} className="text-slate-400 hover:text-primary transition-colors" />
-          <div className="w-8 h-8 rounded-lg tosca-bg flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
-            <Target size={18} fill="currentColor" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">ZieAds</span>
+          <img src={LOGO_URL} alt="ZieAds Logo" className="h-8 md:h-10 w-auto object-contain" />
         </Link>
         <Link to="/" className="px-6 py-2.5 rounded-full tosca-bg text-white text-sm font-bold hover:bg-primary-dark transition-all shadow-lg shadow-teal-500/20">
           Get Started

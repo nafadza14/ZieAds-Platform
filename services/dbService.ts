@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { Campaign, AdCreative, UserProfile, ClickLog, FraudSummary, Platform } from '../types';
 
 export const orchestrateCampaignPublish = async (
-  campaign: Partial<Campaign>,
+  campaign: Partial<Campaign> & { business_id?: string },
   creatives: AdCreative[]
 ) => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -14,6 +14,7 @@ export const orchestrateCampaignPublish = async (
     .from('campaigns')
     .insert([{
       user_id: user.id,
+      business_id: campaign.business_id,
       name: campaign.name,
       type: campaign.type,
       objective: campaign.objective,
@@ -28,7 +29,7 @@ export const orchestrateCampaignPublish = async (
 
   if (campaignError) throw campaignError;
 
-  // 2. Create Ad Records for each platform/creative
+  // 2. Create Ad Records
   const adsToInsert = creatives.map(ad => ({
     campaign_id: campaignData.id,
     platform: ad.platform,
@@ -39,11 +40,21 @@ export const orchestrateCampaignPublish = async (
     predicted_ctr: ad.predictedCTR
   }));
 
-  const { error: adsError } = await supabase
-    .from('ads')
-    .insert(adsToInsert);
-
+  const { error: adsError } = await supabase.from('ads').insert(adsToInsert);
   if (adsError) throw adsError;
+
+  // 3. LOG AI USAGE (Admin Control Plane Logic)
+  await supabase.from('system_logs').insert([{
+    event_type: 'AI_GEN',
+    user_id: user.id,
+    severity: 'info',
+    payload: {
+      campaign_id: campaignData.id,
+      platforms: campaign.platforms,
+      creative_count: creatives.length,
+      model: 'gemini-3-flash'
+    }
+  }]);
 
   return campaignData;
 };
@@ -59,7 +70,6 @@ export const fetchUserProfile = async (): Promise<UserProfile | null> => {
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
-  
   if (!data) return null;
 
   return {
@@ -94,7 +104,6 @@ export const updateUserProfile = async (profile: Partial<UserProfile>) => {
 };
 
 export const fetchClickLogs = async (businessId: string): Promise<ClickLog[]> => {
-  // Mock data implementation for demonstration
   return [
     { id: '1', businessId, ipAddress: '192.168.1.45', userAgent: 'Mozilla/5.0...', fingerprint: 'hash_1', threatType: 'Bot Behavior', platform: Platform.Meta, timestamp: '2 mins ago' },
     { id: '2', businessId, ipAddress: '45.12.8.192', userAgent: 'Mozilla/5.0...', fingerprint: 'hash_2', threatType: 'Suspicious IP', platform: Platform.Google, timestamp: '14 mins ago' },
@@ -104,7 +113,6 @@ export const fetchClickLogs = async (businessId: string): Promise<ClickLog[]> =>
 };
 
 export const fetchFraudSummary = async (businessId: string): Promise<FraudSummary> => {
-  // Mock data implementation
   return {
     businessId,
     totalScannedClicks: 14534,

@@ -19,6 +19,8 @@ import {
 import { scanWebsite } from '../services/geminiService';
 import { BrandProfile } from '../types';
 
+const LOGO_URL = "https://i.pinimg.com/736x/e6/3d/aa/e63daaceb34de0af110a18ef9ff2d3c1.jpg";
+
 interface WebsiteScannerProps {
   onScanComplete: (profile: BrandProfile) => void;
   currentProfile: BrandProfile | null;
@@ -354,7 +356,7 @@ const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, current
              <div className="bg-white dark:bg-slate-900 rounded-[44px] overflow-hidden min-h-[600px] flex flex-col transition-colors shadow-inner">
                 <div className="h-16 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-8 bg-slate-50/50 dark:bg-slate-800/50 transition-colors">
                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full tosca-bg flex items-center justify-center text-white text-[8px] font-bold">Z</div>
+                      <img src={LOGO_URL} alt="ZieAds Logo" className="h-6 w-auto object-contain" />
                       <span className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 tracking-widest transition-colors font-sans">ZieAds Preview</span>
                    </div>
                    <div className="flex items-center gap-2">
@@ -368,13 +370,11 @@ const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, current
                    <div className="w-full max-w-[340px] space-y-8 text-center">
                       <div className="relative group mx-auto">
                         <div className="absolute inset-0 tosca-bg opacity-10 dark:opacity-20 blur-2xl rounded-full scale-150 animate-pulse transition-opacity"></div>
-                        <div className="relative w-24 h-24 bg-white dark:bg-slate-800 rounded-3xl shadow-xl flex items-center justify-center mx-auto border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors">
+                        <div className="relative flex items-center justify-center mx-auto transition-colors">
                           {editableProfile?.logoUrl ? (
-                            <img src={editableProfile.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                            <img src={editableProfile.logoUrl} alt="Logo" className="h-16 w-auto object-contain" />
                           ) : (
-                            <div className="text-slate-200 dark:text-slate-700 transition-colors">
-                              <Layout size={40} />
-                            </div>
+                            <img src={LOGO_URL} alt="ZieAds Logo" className="h-16 w-auto object-contain" />
                           )}
                         </div>
                       </div>
