@@ -12,7 +12,7 @@ import AdAccountConnector from './components/AdAccountConnector';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLibrary from './components/AdminLibrary';
 import AuthPage from './components/AuthPage';
-import { Business, UserProfile } from './types';
+import { Business, UserProfile, Campaign } from './types';
 import { supabase } from './services/supabaseClient';
 import { fetchUserProfile } from './services/dbService';
 
@@ -79,17 +79,17 @@ const App: React.FC = () => {
 
       if (bizData && Array.isArray(bizData)) {
         const mapped: Business[] = bizData
-          .filter(b => b !== null)
-          .map(b => {
+          .filter((b: any) => b !== null)
+          .map((b: any) => {
             const profiles = Array.isArray(b.brand_profiles) ? b.brand_profiles : [];
-            const rawCampaigns = Array.isArray(b.campaigns) ? b.campaigns : [];
+            const rawCampaigns: any[] = Array.isArray(b.campaigns) ? b.campaigns : [];
             
             return {
               id: b.id,
               name: b.name || 'Unnamed Business',
               brandProfile: profiles.length > 0 ? (profiles[0] || null) : null,
               campaigns: rawCampaigns
-                .filter(c => c !== null)
+                .filter((c: any) => c !== null)
                 .sort((a: any, b: any) => {
                   const dateA = a?.created_at ? new Date(a.created_at).getTime() : 0;
                   const dateB = b?.created_at ? new Date(b.created_at).getTime() : 0;
