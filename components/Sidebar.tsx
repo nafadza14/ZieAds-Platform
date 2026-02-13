@@ -66,9 +66,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
               <div className="absolute top-0 right-0 w-16 h-16 bg-teal-500/5 rounded-full -mr-8 -mt-8"></div>
               <div className="flex items-center gap-2 relative z-10">
                 <ShieldCheck className="text-primary" size={16} />
-                <span className="text-[10px] font-black text-primary tracking-widest uppercase">Super Admin</span>
+                <span className="text-[10px] font-bold text-primary tracking-[0.15em] uppercase">Super Admin</span>
               </div>
-              <span className="text-[13px] font-bold text-slate-700 dark:text-slate-200 truncate tracking-tight relative z-10">ZieAds Control Plane</span>
+              <span className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate tracking-tight relative z-10">ZieAds Root Node</span>
            </div>
         ) : (
           <div className="relative group">
@@ -101,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
             key={item.to}
             to={item.to}
             className={({ isActive }) => 
-              `flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-[14px] font-medium tracking-tight ${
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[14px] font-medium tracking-[-0.01em] ${
                 isActive 
                   ? 'bg-teal-50 dark:bg-teal-500/10 text-primary dark:text-teal-400 font-semibold shadow-sm' 
                   : 'text-[#4B5563] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#111827] dark:hover:text-white'
@@ -129,11 +129,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
           </div>
         )}
         <div className="px-4 py-3 mb-2">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{userEmail}</p>
+           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] truncate font-mono">{userEmail}</p>
         </div>
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 w-full px-4 py-3 text-[#6B7280] dark:text-slate-400 text-[14px] font-medium tracking-tight hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-2xl transition-all"
+          className="flex items-center gap-3 w-full px-4 py-3 text-[#6B7280] dark:text-slate-400 text-[14px] font-medium tracking-tight hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
         >
           <LogOut size={19} />
           Sign out
