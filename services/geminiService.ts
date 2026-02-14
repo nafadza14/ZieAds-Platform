@@ -1,57 +1,96 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { BrandProfile, AdCreative, Platform, CampaignObjective, Recommendation } from "../types";
+import { BrandProfile, AdCreative, Platform, CampaignObjective, Recommendation, BrandDNA } from "../types";
 
-// Helper to get Gemini instance
 const getAi = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const scanWebsite = async (url: string): Promise<BrandProfile> => {
+export interface AdTemplateLayer {
+  id: string;
+  pos: [number, number];
+  text: string;
+  fontSize: number;
+  color: string;
+  font: string;
+}
+
+export interface AdTemplateLogic {
+  canvas_layers: AdTemplateLayer[];
+  ai_image_prompt: string;
+}
+
+export const scanWebsite = async (url: string, logoBase64?: string): Promise<BrandProfile> => {
   try {
     const ai = getAi();
+    const parts: any[] = [
+      { text: `
+        Analyze the brand DNA for: ${url}. 
+        Synthesize three core components for marketing:
+        1. Core Narrative: What is their core story and unique value proposition?
+        2. Audience Psychology: What are the emotional triggers and behavioral signals of their customers?
+        3. Visual Identity: What aesthetic direction and color theory do they project?
+        
+        If a logo image is provided, incorporate its visual style, weight, and color balance into your analysis.
+        Return basic metadata like business_name, primary_colors, tone, products, and target audiences.
+      `}
+    ];
+
+    if (logoBase64) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/png',
+          data: logoBase64.split(',')[1] || logoBase64
+        }
+      });
+    }
+
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Analyze the text and meta-tags of this URL: ${url}. Return a marketing profile in JSON format.
-      Extract:
-      1. business_name: The company name.
-      2. description: A compelling core value proposition (max 800 chars).
-      3. primary_color: A detect primary brand HEX color.
-      4. secondary_color: A detect secondary brand HEX color.
-      5. tone: Brand voice personality.
-      6. products: List of key products or services.
-      7. audiences: Potential target audience segments.`,
+      model: 'gemini-3-pro-preview',
+      contents: { parts },
       config: {
+        thinkingConfig: { thinkingBudget: 16384 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             business_name: { type: Type.STRING },
-            description: { type: Type.STRING },
+            summary: { type: Type.STRING },
             tone: { type: Type.STRING },
             primary_color: { type: Type.STRING },
             secondary_color: { type: Type.STRING },
             products: { type: Type.ARRAY, items: { type: Type.STRING } },
             audiences: { type: Type.ARRAY, items: { type: Type.STRING } },
+            dna: {
+              type: Type.OBJECT,
+              properties: {
+                narrative: { type: Type.STRING },
+                audience: { type: Type.STRING },
+                visuals: { type: Type.STRING }
+              },
+              required: ["narrative", "audience", "visuals"]
+            }
           },
-          required: ["business_name", "description", "tone", "primary_color", "secondary_color", "products", "audiences"],
+          required: ["business_name", "summary", "tone", "primary_color", "secondary_color", "products", "audiences", "dna"],
         },
       },
     });
 
     const text = response.text?.trim();
-    if (!text) throw new Error("AI failed to return content for website scan.");
+    if (!text) throw new Error("AI failed to return content for DNA analysis.");
     const data = JSON.parse(text);
     
     return { 
       name: data.business_name,
-      summary: data.description,
-      description: data.description,
+      summary: data.summary,
+      description: data.summary,
       tone: data.tone,
       primaryColor: data.primary_color || '#14B8A6',
       secondaryColor: data.secondary_color || '#1E293B',
       colors: [data.primary_color, data.secondary_color],
       products: data.products,
       audiences: data.audiences,
-      url 
+      url,
+      dna: data.dna,
+      logoUrl: logoBase64 || undefined
     };
   } catch (error) {
     console.error("Error in scanWebsite:", error);
@@ -59,71 +98,26 @@ export const scanWebsite = async (url: string): Promise<BrandProfile> => {
   }
 };
 
-export const generateCampaignStrategy = async (
-  profile: BrandProfile,
-  goal: string,
-  type: string
-): Promise<{ platforms: Platform[], suggestedBudget: number, adAngles: string[], targetAudience: string }> => {
-  try {
-    const ai = getAi();
-    const prompt = `
-      Context: Brand ${profile.name} (${profile.summary}).
-      Goal: ${goal}.
-      Campaign Type: ${type}.
-      
-      Task:
-      1. Select the 2 best advertising platforms from [Meta, Google, TikTok, LinkedIn, Pinterest, X].
-      2. Suggest a daily starting budget in USD.
-      3. Create 3 marketing 'angles' or hooks for the ads.
-      4. Define the target audience segment in one sentence.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget: 16384 },
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            platforms: { type: Type.ARRAY, items: { type: Type.STRING } },
-            suggestedBudget: { type: Type.NUMBER },
-            adAngles: { type: Type.ARRAY, items: { type: Type.STRING } },
-            targetAudience: { type: Type.STRING },
-          },
-          required: ["platforms", "suggestedBudget", "adAngles", "targetAudience"],
-        },
-      },
-    });
-
-    const text = response.text?.trim();
-    if (!text) throw new Error("AI failed to return strategy.");
-    return JSON.parse(text);
-  } catch (error) {
-    console.error("Error in generateCampaignStrategy:", error);
-    throw error;
-  }
-};
-
-export const generateCreatives = async (
+export const generateAdCreativeComplex = async (
   brandProfile: BrandProfile,
-  platforms: Platform[],
+  platform: Platform,
   objective: CampaignObjective,
-  angle: string
+  goal: string
 ): Promise<AdCreative[]> => {
   try {
     const ai = getAi();
     const prompt = `
-      Generate 3 high-converting ad variants.
-      Brand: ${brandProfile.name}.
-      Context: ${brandProfile.summary}.
-      Platforms: ${platforms.join(', ')}.
+      Context: Brand ${brandProfile.name} (${brandProfile.summary}). 
+      Goal: ${goal}.
       Objective: ${objective}.
-      Marketing Angle: ${angle}.
+      Platform: ${platform}.
       
-      For each variant, provide a headline, primary text, and a compelling CTA. 
-      Also predict a CTR (0.01 to 0.05) based on current industry benchmarks for this niche.
+      Task: Generate 3 high-converting ad plans (variants).
+      For each variant provide:
+      - A compelling headline.
+      - A high-engagement primary text.
+      - A strong CTA.
+      - A detailed image generation prompt (visual description) that aligns with the Brand DNA: ${brandProfile.dna?.visuals}.
     `;
 
     const response = await ai.models.generateContent({
@@ -139,9 +133,10 @@ export const generateCreatives = async (
               headline: { type: Type.STRING },
               primaryText: { type: Type.STRING },
               cta: { type: Type.STRING },
+              imagePrompt: { type: Type.STRING },
               predictedCTR: { type: Type.NUMBER },
             },
-            required: ["headline", "primaryText", "cta", "predictedCTR"],
+            required: ["headline", "primaryText", "cta", "imagePrompt", "predictedCTR"],
           }
         },
       },
@@ -149,9 +144,88 @@ export const generateCreatives = async (
 
     const text = response.text?.trim();
     if (!text) throw new Error("AI failed to return creatives.");
+    return JSON.parse(text).map((c: any) => ({ ...c, platform }));
+  } catch (error) {
+    console.error("Error in generateAdCreativeComplex:", error);
+    throw error;
+  }
+};
+
+export const generateImageForAd = async (prompt: string): Promise<string> => {
+  try {
+    const ai = getAi();
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: { parts: [{ text: `A professional advertising image, high definition, no text in image. Subject: ${prompt}` }] },
+      config: {
+        imageConfig: { aspectRatio: "1:1" }
+      }
+    });
+
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    throw new Error("No image data returned");
+  } catch (error) {
+    console.error("Image gen error:", error);
+    return "https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&q=80&w=800";
+  }
+};
+
+export const generateDynamicAdTemplateLogic = async (
+  productName: string,
+  style: string,
+  brandColors: string[]
+): Promise<AdTemplateLogic> => {
+  try {
+    const ai = getAi();
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: `Synthesize a high-converting dynamic ad composition logic for "${productName}" using the "${style}" aesthetic style.
+      Incorporate these brand colors: ${brandColors.join(', ')}.
+      The canvas dimensions are 1000x1000 pixels.
+      Provide a list of text layers (canvas_layers) with their spatial positions [x, y], font sizing, and coloring.
+      Also provide a descriptive ai_image_prompt for the background image that complements the text layout.`,
+      config: {
+        thinkingConfig: { thinkingBudget: 8192 },
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            canvas_layers: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  pos: { 
+                    type: Type.ARRAY, 
+                    items: { type: Type.NUMBER },
+                    minItems: 2,
+                    maxItems: 2
+                  },
+                  text: { type: Type.STRING },
+                  fontSize: { type: Type.NUMBER },
+                  color: { type: Type.STRING },
+                  font: { type: Type.STRING },
+                },
+                required: ["id", "pos", "text", "fontSize", "color", "font"],
+              }
+            },
+            ai_image_prompt: { type: Type.STRING }
+          },
+          required: ["canvas_layers", "ai_image_prompt"],
+        },
+      },
+    });
+
+    const text = response.text?.trim();
+    if (!text) throw new Error("AI failed to synthesize template logic.");
     return JSON.parse(text);
   } catch (error) {
-    console.error("Error in generateCreatives:", error);
+    console.error("Error in generateDynamicAdTemplateLogic:", error);
     throw error;
   }
 };

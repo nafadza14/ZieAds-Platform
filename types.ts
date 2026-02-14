@@ -35,12 +35,10 @@ export interface UserProfile {
   logoUrl?: string;
 }
 
-export interface AdAccount {
-  id: string;
-  platform: Platform;
-  accountId: string;
-  status: 'active' | 'error' | 'disconnected' | 'linked';
-  accountName?: string;
+export interface BrandDNA {
+  narrative: string;
+  audience: string;
+  visuals: string;
 }
 
 export interface BrandProfile {
@@ -50,11 +48,19 @@ export interface BrandProfile {
   tone: string;
   primaryColor: string;
   secondaryColor: string;
-  colors: string[]; // Keep for compatibility
+  colors: string[];
   products: string[];
   audiences: string[];
   url?: string;
   logoUrl?: string;
+  dna?: BrandDNA;
+}
+
+export interface Business {
+  id: string;
+  name: string;
+  brandProfile: BrandProfile | null;
+  campaigns: Campaign[];
 }
 
 export interface AdCreative {
@@ -65,6 +71,14 @@ export interface AdCreative {
   cta: string;
   imageUrl?: string;
   predictedCTR?: number;
+  imagePrompt?: string; // Prompt used to generate the image
+}
+
+export interface AdAccount {
+  id: string;
+  platform: Platform;
+  accountId: string;
+  status: 'active' | 'error' | 'disconnected';
 }
 
 export interface Campaign {
@@ -80,6 +94,9 @@ export interface Campaign {
   duration: number;
   status: CampaignStatus;
   createdAt: string;
+  region?: string;
+  startDate?: string;
+  endDate?: string;
   metrics: {
     spend: number;
     impressions: number;
@@ -87,13 +104,6 @@ export interface Campaign {
     conversions: number;
     roas: number;
   };
-}
-
-export interface Business {
-  id: string;
-  name: string;
-  brandProfile: BrandProfile | null;
-  campaigns: Campaign[];
 }
 
 export interface Recommendation {

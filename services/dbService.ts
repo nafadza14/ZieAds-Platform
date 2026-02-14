@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { Campaign, AdCreative, UserProfile, ClickLog, FraudSummary, Platform } from '../types';
+import { Campaign, AdCreative, UserProfile, ClickLog, FraudSummary, Platform, BrandProfile } from '../types';
 
 export const orchestrateCampaignPublish = async (
   campaign: Partial<Campaign> & { business_id?: string },
@@ -22,6 +22,9 @@ export const orchestrateCampaignPublish = async (
       duration: campaign.duration,
       platforms: campaign.platforms,
       target_audience: campaign.audience,
+      region: campaign.region,
+      start_date: campaign.startDate,
+      end_date: campaign.endDate,
       status: 'active'
     }])
     .select()
@@ -43,7 +46,7 @@ export const orchestrateCampaignPublish = async (
   const { error: adsError } = await supabase.from('ads').insert(adsToInsert);
   if (adsError) throw adsError;
 
-  // 3. LOG AI USAGE (Admin Control Plane Logic)
+  // 3. LOG AI USAGE
   await supabase.from('system_logs').insert([{
     event_type: 'AI_GEN',
     user_id: user.id,
@@ -57,6 +60,34 @@ export const orchestrateCampaignPublish = async (
   }]);
 
   return campaignData;
+};
+
+export const updateBusinessBrandProfile = async (businessId: string, profile: BrandProfile) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Use UPSERT logic on business_id (requires unique constraint in DB)
+  const payload = {
+    business_id: businessId,
+    name: profile.name,
+    description: profile.summary,
+    tone: profile.tone,
+    primary_color: profile.primaryColor,
+    secondary_color: profile.secondaryColor,
+    products: profile.products,
+    audiences: profile.audiences,
+    logo_url: profile.logoUrl,
+    dna: profile.dna 
+  };
+
+  const { error } = await supabase
+    .from('brand_profiles')
+    .upsert(payload, { onConflict: 'business_id' });
+
+  if (error) {
+    console.error("Supabase Upsert Error:", error);
+    throw error;
+  }
 };
 
 export const fetchUserProfile = async (): Promise<UserProfile | null> => {

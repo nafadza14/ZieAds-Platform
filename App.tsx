@@ -12,7 +12,8 @@ import AdAccountConnector from './components/AdAccountConnector';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLibrary from './components/AdminLibrary';
 import AuthPage from './components/AuthPage';
-import { Business, UserProfile, Campaign } from './types';
+import MyProjects from './components/MyProjects';
+import { Business, UserProfile, Campaign, BrandProfile } from './types';
 import { supabase } from './services/supabaseClient';
 import { fetchUserProfile } from './services/dbService';
 
@@ -99,10 +100,8 @@ const App: React.FC = () => {
           });
         
         setBusinesses(mapped);
-        if (mapped.length > 0) {
+        if (mapped.length > 0 && !activeBusinessId) {
           setActiveBusinessId(mapped[0].id);
-        } else {
-          setActiveBusinessId(null);
         }
       } else {
         setBusinesses([]);
@@ -112,7 +111,7 @@ const App: React.FC = () => {
       console.error("Database fetch error:", e.message || e);
       setBusinesses([]);
     }
-  }, []);
+  }, [activeBusinessId]);
 
   const initData = useCallback(async (userId: string) => {
     setLoading(true);
@@ -153,7 +152,16 @@ const App: React.FC = () => {
 
     const checkSession = async () => {
       try {
-        const { data: { session: sbSession } } = await supabase.auth.getSession();
+        const { data: { session: sbSession }, error } = await supabase.auth.getSession();
+        
+        // Handle "Invalid Refresh Token" by clearing local state
+        if (error && error.message.includes('Refresh Token')) {
+          await supabase.auth.signOut();
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+
         if (sbSession) {
           handleAuthSuccess(sbSession);
         } else {
@@ -166,17 +174,18 @@ const App: React.FC = () => {
 
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sbSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sbSession) => {
       if (localStorage.getItem('zieads_admin_bypass') === 'true') return;
-      if (sbSession) {
-        handleAuthSuccess(sbSession);
-      } else {
+      
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !sbSession) {
         setBusinesses([]);
         setUserProfile(null);
         setActiveBusinessId(null);
         setIsSystemAdmin(false);
         setSession(null);
         setLoading(false);
+      } else if (sbSession) {
+        handleAuthSuccess(sbSession);
       }
     });
 
@@ -189,6 +198,12 @@ const App: React.FC = () => {
     window.location.href = '#/'; 
     window.location.reload(); 
   };
+
+  const handleScanComplete = useCallback(async () => {
+    if (session?.user?.id) {
+      await fetchData(session.user.id);
+    }
+  }, [fetchData, session]);
 
   const activeBusiness = useMemo(() => {
     if (!activeBusinessId || !Array.isArray(businesses)) return null;
@@ -206,7 +221,7 @@ const App: React.FC = () => {
       <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-slate-950 transition-colors">
         <div className="flex flex-col items-center gap-4">
            <div className="w-12 h-12 tosca-bg rounded-xl animate-spin shadow-2xl"></div>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-sans">ZieAds Network Init...</p>
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-sans">ZieAds network init...</p>
         </div>
       </div>
     );
@@ -248,10 +263,11 @@ const App: React.FC = () => {
             ) : (
               <>
                 <Route path="/" element={<Dashboard activeBusiness={activeBusiness} toggleTheme={toggleTheme} isDarkMode={isDarkMode} />} />
+                <Route path="/projects" element={<MyProjects activeBusiness={activeBusiness} />} />
                 <Route path="/accounts" element={<AdAccountConnector />} />
                 <Route path="/fraud" element={<ClickFraudProtection />} />
-                <Route path="/scanner" element={<WebsiteScanner onScanComplete={() => {}} currentProfile={activeBusiness?.brandProfile || null} />} />
-                <Route path="/builder" element={<CampaignBuilder brandProfile={activeBusiness?.brandProfile || null} onComplete={() => {}} />} />
+                <Route path="/scanner" element={<WebsiteScanner activeBusiness={activeBusiness} onScanComplete={handleScanComplete} currentProfile={activeBusiness?.brandProfile || null} />} />
+                <Route path="/builder" element={<CampaignBuilder brandProfile={activeBusiness?.brandProfile || null} onComplete={handleScanComplete} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </>
             )}

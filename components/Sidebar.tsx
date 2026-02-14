@@ -17,7 +17,8 @@ import {
   Image as ImageIcon,
   CreditCard,
   BarChart3,
-  Server
+  Server,
+  FolderKanban
 } from 'lucide-react';
 import { Business } from '../types';
 
@@ -34,21 +35,22 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses, onSwitchBusiness, userEmail, isAdmin = false }) => {
   const adminItems = [
-    { to: '/', icon: Server, label: 'Command Center' },
-    { to: '/library', icon: ImageIcon, label: 'Ad Library' },
+    { to: '/', icon: Server, label: 'Command center' },
+    { to: '/library', icon: ImageIcon, label: 'Ad library' },
     { to: '/users', icon: Users, label: 'Identities' },
-    { to: '/revenue', icon: CreditCard, label: 'Capital Control' },
-    { to: '/analytics', icon: BarChart3, label: 'Node Metrics' },
-    { to: '/settings', icon: Settings, label: 'System Parameters' },
+    { to: '/revenue', icon: CreditCard, label: 'Capital control' },
+    { to: '/analytics', icon: BarChart3, label: 'Node metrics' },
+    { to: '/settings', icon: Settings, label: 'System parameters' },
   ];
 
   const userItems = [
     { to: '/builder', icon: PlusCircle, label: 'Create an ad' },
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/projects', icon: FolderKanban, label: 'My projects' },
     { to: '/accounts', icon: UserCheck, label: 'Ad accounts' },
     { to: '/fraud', icon: ShieldAlert, label: 'Click fraud protection' },
     { to: '/businesses', icon: Building2, label: 'Businesses' },
-    { to: '/scanner', icon: Globe, label: 'Website scanner' },
+    { to: '/scanner', icon: Globe, label: 'Brand DNA' },
     { to: '/settings', icon: Settings, label: 'Settings' },
   ];
 
@@ -58,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
     <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col hidden md:flex font-sans transition-colors">
       <div className="p-7">
         <div className="flex items-center mb-8 group cursor-pointer">
-          <img src={LOGO_URL} alt="ZieAds Logo" className="h-10 w-auto object-contain hover:scale-105 transition-transform" />
+          <img src={LOGO_URL} alt="ZieAds Logo" className="h-10 md:h-12 w-auto object-contain hover:scale-105 transition-transform" />
         </div>
 
         {isAdmin ? (
@@ -66,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
               <div className="absolute top-0 right-0 w-16 h-16 bg-teal-500/5 rounded-full -mr-8 -mt-8"></div>
               <div className="flex items-center gap-2 relative z-10">
                 <ShieldCheck className="text-primary" size={16} />
-                <span className="text-[10px] font-bold text-primary tracking-[0.15em] uppercase">Super Admin</span>
+                <span className="text-[11px] font-bold text-primary tracking-tight">Super Admin</span>
               </div>
               <span className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate tracking-tight relative z-10">ZieAds Root Node</span>
            </div>
@@ -121,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
       <div className="p-5 border-t border-slate-100 dark:border-slate-800">
         {!isAdmin && (
           <div className="mb-4 px-4 py-4 bg-[#111827] dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-900/10 transition-colors">
-             <p className="text-[10px] font-bold text-teal-400 tracking-wider mb-1 uppercase">Current plan</p>
+             <p className="text-[10px] font-bold text-teal-400 tracking-tight mb-1">Current plan</p>
              <p className="text-sm text-white font-semibold mb-3 tracking-tight">Growth plan</p>
              <button className="text-[11px] font-bold text-white bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-all flex items-center gap-2">
                Upgrade now <ArrowRight size={12} />
@@ -129,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeBusiness, businesses,
           </div>
         )}
         <div className="px-4 py-3 mb-2">
-           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] truncate font-mono">{userEmail}</p>
+           <p className="text-[10px] font-bold text-slate-400 tracking-tight truncate font-mono">{userEmail}</p>
         </div>
         <button
           onClick={onLogout}

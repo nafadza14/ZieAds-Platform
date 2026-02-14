@@ -66,8 +66,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
         <div className="text-center space-y-2">
-          <p className="text-slate-900 dark:text-white font-semibold text-xl tracking-[-0.02em]">Syncing Master Node</p>
-          <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] animate-pulse">Establishing Secure Root Session...</p>
+          <p className="text-slate-900 dark:text-white font-semibold text-xl tracking-[-0.02em]">Syncing master node</p>
+          <p className="text-slate-400 font-bold tracking-tight text-[10px] animate-pulse">Establishing secure root session...</p>
         </div>
       </div>
     );
@@ -80,12 +80,12 @@ const AdminDashboard: React.FC = () => {
         <div className="flex items-center gap-6 relative z-10">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] font-mono">NODE: ZIEADS-ROOT-MASTER</span>
+            <span className="text-[10px] font-bold text-slate-400 tracking-tight font-mono">Node: ZieAds-Root-Master</span>
           </div>
           <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
           <div className="hidden sm:flex items-center gap-2">
             <Activity className="text-teal-400" size={14} />
-            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Latency: 0.14ms</span>
+            <span className="text-[10px] font-medium text-slate-400 tracking-tight">Latency: 0.14ms</span>
           </div>
         </div>
         
@@ -93,24 +93,24 @@ const AdminDashboard: React.FC = () => {
            <button 
             onClick={loadAdminData}
             disabled={refreshing}
-            className="flex items-center gap-2 text-[10px] font-bold text-teal-400 uppercase tracking-widest bg-teal-500/10 px-3 py-1.5 rounded-lg border border-teal-500/20 hover:bg-teal-500/20 transition-all active:scale-95"
+            className="flex items-center gap-2 text-[10px] font-bold text-teal-400 tracking-tight bg-teal-500/10 px-3 py-1.5 rounded-lg border border-teal-500/20 hover:bg-teal-500/20 transition-all active:scale-95"
            >
              <RefreshCcw size={12} className={refreshing ? 'animate-spin' : ''} />
-             {refreshing ? 'Syncing...' : 'Force Refresh'}
+             {refreshing ? 'Syncing...' : 'Force refresh'}
            </button>
-           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">v1.4.0-stable</span>
+           <span className="text-[10px] font-bold text-slate-500 tracking-tight font-mono">v1.4.0-stable</span>
         </div>
       </div>
 
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-2">
-            <div className="px-2 py-0.5 bg-teal-500 text-white text-[9px] font-bold uppercase tracking-[0.1em] rounded shadow-lg shadow-teal-500/20 flex items-center gap-1">
-              <CheckCircle size={10} /> Authorized Session
+            <div className="px-2 py-0.5 bg-teal-500 text-white text-[9px] font-bold tracking-tight rounded shadow-lg shadow-teal-500/20 flex items-center gap-1">
+              <CheckCircle size={10} /> Authorized session
             </div>
           </div>
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white tracking-[-0.03em] leading-tight">
-            Command Center
+            Command center
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium text-[15px] tracking-tight transition-colors">
             Platform orchestration for <span className="text-slate-900 dark:text-white font-semibold">{currentStats.totalUsers.toLocaleString()}</span> active identities.
@@ -137,24 +137,24 @@ const AdminDashboard: React.FC = () => {
       {/* Primary Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 tabular-nums">
         <StatBox 
-          label="Managed Spend" 
+          label="Managed spend" 
           value={`$${currentStats.totalManagedSpend.toLocaleString()}`} 
           icon={<DollarSign size={18}/>} 
         />
         <StatBox 
-          label="Fraud Shielded" 
+          label="Fraud shielded" 
           value={`$${currentStats.fraudSavingsTotal.toLocaleString()}`} 
           icon={<ShieldAlert size={18}/>} 
           trend="+12%"
         />
         <StatBox 
-          label="Node Revenue" 
+          label="Node revenue" 
           value={`$${currentStats.projectedRevenue.toLocaleString()}`} 
           icon={<TrendingUp size={18}/>} 
           trend="+2.4%"
         />
         <StatBox 
-          label="Active Syncs" 
+          label="Active syncs" 
           value={currentStats.activeCampaigns.toLocaleString()} 
           icon={<Cpu size={18}/>} 
         />
@@ -166,11 +166,11 @@ const AdminDashboard: React.FC = () => {
              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm transition-colors relative overflow-hidden">
                 <div className="flex items-center justify-between mb-10">
                   <h3 className="text-lg font-semibold tracking-[-0.02em] text-[#111827] dark:text-white flex items-center gap-2">
-                    <BarChart3 size={18} className="text-primary" /> Network Volume Velocity
+                    <BarChart3 size={18} className="text-primary" /> Network volume velocity
                   </h3>
                   <div className="flex gap-2">
                      <span className="w-3 h-3 rounded-full bg-teal-500"></span>
-                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live Flow</span>
+                     <span className="text-[10px] font-bold text-slate-400 tracking-tight">Live flow</span>
                   </div>
                 </div>
                 <div className="h-64 flex items-end justify-between gap-2.5 pt-4">
@@ -190,10 +190,10 @@ const AdminDashboard: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <h3 className="text-base font-semibold tracking-[-0.02em] text-[#111827] dark:text-white flex items-center gap-2">
-                    <History size={18} className="text-primary"/> System Event Stream
+                    <History size={18} className="text-primary"/> System event stream
                   </h3>
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-full">
-                    Live Monitor
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 tracking-tight bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-full">
+                    Live monitor
                   </div>
                </div>
                <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -207,7 +207,7 @@ const AdminDashboard: React.FC = () => {
                        <div className="flex-1 space-y-1">
                           <div className="flex items-center justify-between">
                              <div className="flex items-center gap-2">
-                               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">{log.eventType}</span>
+                               <span className="text-[10px] font-bold tracking-tight text-slate-500 dark:text-slate-400 font-mono capitalize">{log.eventType.toLowerCase()}</span>
                                <span className={`w-1.5 h-1.5 rounded-full ${log.severity === 'critical' ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></span>
                              </div>
                              <span className="text-[10px] font-medium text-slate-400 tabular-nums">{new Date(log.timestamp).toLocaleTimeString()}</span>
@@ -238,15 +238,15 @@ const AdminDashboard: React.FC = () => {
                    <Zap size={24} fill="currentColor" fillOpacity={0.2} />
                  </div>
                  <div>
-                    <h3 className="text-lg font-bold tracking-tight">AI Neural Link</h3>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Gemini 3 Pro Cluster</p>
+                    <h3 className="text-lg font-bold tracking-tight">AI neural link</h3>
+                    <p className="text-[10px] font-bold text-slate-500 tracking-tight">Gemini 3 Pro Cluster</p>
                  </div>
               </div>
               
               <div className="space-y-5">
                 <div className="space-y-2">
-                   <div className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      <span>Sync Capacity</span>
+                   <div className="flex justify-between text-[11px] font-bold tracking-tight text-slate-400">
+                      <span>Sync capacity</span>
                       <span className="text-teal-400">98.2%</span>
                    </div>
                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
@@ -261,14 +261,14 @@ const AdminDashboard: React.FC = () => {
 
            {/* Security Params */}
            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-4 flex items-center gap-2">
-                <Lock size={12}/> Security Protocol
+              <h4 className="text-[11px] font-bold tracking-tight text-slate-400 mb-4 flex items-center gap-2">
+                <Lock size={12}/> Security protocol
               </h4>
               <div className="space-y-4">
                 <ParameterRow label="IP Geofencing" active />
-                <ParameterRow label="Escalation Shield" active />
-                <ParameterRow label="Isolated Tenants" active />
-                <ParameterRow label="Audit Persistence" active />
+                <ParameterRow label="Escalation shield" active />
+                <ParameterRow label="Isolated tenants" active />
+                <ParameterRow label="Audit persistence" active />
               </div>
            </div>
         </div>
@@ -298,7 +298,7 @@ const StatBox = ({ label, value, icon, trend, color = 'text-slate-900 dark:text-
         </span>
       )}
     </div>
-    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-1">{label}</p>
+    <p className="text-[10px] font-bold tracking-tight text-slate-400 mb-1">{label}</p>
     <p className={`text-3xl font-bold tracking-[-0.03em] ${color}`}>{value}</p>
   </div>
 );

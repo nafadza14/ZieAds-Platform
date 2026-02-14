@@ -15,10 +15,15 @@ import {
   ChevronRight,
   Home,
   Sun,
-  Moon
+  Moon,
+  Zap,
+  ArrowRight,
+  Sparkles,
+  Fingerprint
 } from 'lucide-react';
 import { Business, Recommendation, Campaign } from '../types';
 import { getRecommendations } from '../services/geminiService';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
   activeBusiness: Business | null;
@@ -27,6 +32,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDarkMode }) => {
+  const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
 
@@ -67,6 +73,8 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
     { name: 'Sun', spend: totalSpend * 0.12, conv: totalConversions * 0.12 },
   ];
 
+  const hasBrandDNA = activeBusiness?.brandProfile?.dna;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans selection:bg-teal-100 dark:selection:bg-teal-900/30">
       <header className="space-y-4">
@@ -91,14 +99,14 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
             <button 
               onClick={!isDarkMode ? undefined : toggleTheme}
               className={`relative flex items-center justify-center w-[34px] h-[34px] rounded-full transition-colors z-10 ${!isDarkMode ? 'text-slate-900' : 'text-slate-500 hover:text-slate-400'}`}
-              aria-label="Light Mode"
+              aria-label="Light mode"
             >
               <Sun size={16} strokeWidth={2.5} />
             </button>
             <button 
               onClick={isDarkMode ? undefined : toggleTheme}
               className={`relative flex items-center justify-center w-[34px] h-[34px] rounded-full transition-colors z-10 ${isDarkMode ? 'text-teal-400' : 'text-slate-400 hover:text-slate-50'}`}
-              aria-label="Dark Mode"
+              aria-label="Dark mode"
             >
               <Moon size={16} strokeWidth={2.5} />
             </button>
@@ -107,23 +115,74 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold text-[#111827] dark:text-slate-100 tracking-[-0.02em] mb-1 transition-colors">Business Performance</h1>
+            <h1 className="text-3xl font-semibold text-[#111827] dark:text-slate-100 tracking-[-0.02em] mb-1 transition-colors">Business performance</h1>
             <p className="text-[#4B5563] dark:text-slate-400 font-normal text-base transition-colors">
               Monitoring active campaigns for <span className="font-semibold text-primary">{activeBusiness?.name}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.05em] text-[#6B7280] dark:text-slate-400 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
+              <div className="flex items-center gap-2 text-[11px] font-medium tracking-tight text-[#6B7280] dark:text-slate-400 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                  AI Optimization Live
+                  AI optimization live
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.05em] text-primary dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-4 py-2 rounded-full border border-teal-100 dark:border-teal-500/20 shadow-sm transition-colors">
+              <div className="flex items-center gap-2 text-[11px] font-medium tracking-tight text-primary dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-4 py-2 rounded-full border border-teal-100 dark:border-teal-500/20 shadow-sm transition-colors">
                   <ShieldAlert size={14} />
                   Fraud protection active
               </div>
           </div>
         </div>
       </header>
+
+      {/* Brand DNA Quick Action Card */}
+      {!hasBrandDNA ? (
+        <div className="bg-gradient-to-br from-[#111827] to-[#1e293b] rounded-[40px] p-8 md:p-12 text-white relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 blur-[80px] rounded-full group-hover:scale-110 transition-transform duration-700"></div>
+           <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-16">
+              <div className="w-20 h-20 tosca-bg rounded-3xl flex items-center justify-center text-white shrink-0 shadow-2xl shadow-teal-500/20">
+                <Zap size={40} fill="currentColor" />
+              </div>
+              <div className="space-y-4 text-center md:text-left">
+                <h2 className="text-3xl font-bold tracking-tight">Your Brand DNA is missing.</h2>
+                <p className="text-slate-400 max-w-xl font-medium leading-relaxed">To enable autonomous ad generation, ZieAds needs to parse your website, logo, and brand guidelines to establish a marketing blueprint.</p>
+              </div>
+              <button 
+                onClick={() => navigate('/scanner')}
+                className="md:ml-auto px-8 py-4 tosca-bg text-white font-bold rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-teal-500/20 font-display"
+              >
+                Scan brand now <ArrowRight size={20} />
+              </button>
+           </div>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-r from-teal-500/5 to-primary/5 dark:from-teal-500/10 dark:to-primary/10 rounded-[40px] border border-teal-100 dark:border-teal-500/20 p-8 flex flex-col md:flex-row items-center gap-8 group animate-in slide-in-from-top-4 duration-700">
+           <div className="flex items-center gap-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary opacity-20 blur-xl rounded-full scale-150 animate-pulse"></div>
+                <div className="w-16 h-16 rounded-2xl tosca-bg flex items-center justify-center text-white relative shadow-lg">
+                   <Fingerprint size={32} />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white transition-colors">Your Strong DNA is {activeBusiness?.brandProfile?.name}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Wanna change or try another option?</p>
+              </div>
+           </div>
+           <div className="md:ml-auto flex items-center gap-4">
+              <button 
+                onClick={() => navigate('/builder')}
+                className="px-8 py-4 tosca-bg text-white font-bold rounded-2xl shadow-xl shadow-teal-500/20 hover:scale-105 transition-all flex items-center gap-2"
+              >
+                Create new ad <ArrowRight size={18} />
+              </button>
+              <button 
+                onClick={() => navigate('/scanner')}
+                className="px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+              >
+                Scan brand now
+              </button>
+           </div>
+        </div>
+      )}
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -136,8 +195,8 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Growth Trends</h3>
-            <div className="flex gap-2 font-medium text-[11px] uppercase tracking-wider">
+            <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Growth trends</h3>
+            <div className="flex gap-2 font-medium text-[11px] tracking-tight">
                 <span className="text-primary dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-2.5 py-1 rounded-full">Spend</span>
                 <span className="text-slate-400 dark:text-slate-500 px-2.5 py-1 rounded-full">Conversions</span>
             </div>
@@ -176,7 +235,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
             <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-500/10 text-primary dark:text-teal-400 transition-colors">
               <Lightbulb size={20} />
             </div>
-            <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">AI Insights</h3>
+            <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">AI insights</h3>
           </div>
           
           <div className="flex-1 space-y-4">
@@ -190,7 +249,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
               recommendations.map((rec) => (
                 <div key={rec.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 hover:border-teal-200 dark:hover:border-teal-500/50 transition-all group">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-primary dark:text-teal-400 px-2 py-0.5 bg-teal-50 dark:bg-teal-500/20 rounded-lg transition-colors">{rec.type}</span>
+                    <span className="text-[10px] font-semibold tracking-tight text-primary dark:text-teal-400 px-2 py-0.5 bg-teal-50 dark:bg-teal-500/20 rounded-lg transition-colors capitalize">{rec.type}</span>
                     <span className="text-[11px] font-semibold text-green-600 dark:text-green-400 flex items-center gap-1 transition-colors tabular-nums">
                       <ArrowUpRight size={14} /> {rec.impact}
                     </span>
@@ -211,13 +270,13 @@ const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDa
 
       <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         <div className="p-7 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Active Campaigns</h3>
-          <button className="text-primary dark:text-teal-400 text-xs font-bold hover:underline transition-colors uppercase tracking-[0.1em]">View all</button>
+          <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Active campaigns</h3>
+          <button className="text-primary dark:text-teal-400 text-xs font-bold hover:underline transition-colors tracking-tight">View all</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[11px] font-semibold uppercase tracking-wider text-[#6B7280] dark:text-slate-500 transition-colors border-b border-slate-100 dark:border-slate-800">
+              <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[11px] font-semibold tracking-tight text-[#6B7280] dark:text-slate-500 transition-colors border-b border-slate-100 dark:border-slate-800">
                 <th className="px-7 py-4">Campaign</th>
                 <th className="px-7 py-4">Status</th>
                 <th className="px-7 py-4">Platforms</th>
@@ -271,7 +330,7 @@ const MetricCard = ({ title, value, icon, trend, trendColor = 'green' }: { title
       </div>
       <span className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-colors tabular-nums ${trendColor === 'green' ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10' : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10'}`}>{trend}</span>
     </div>
-    <h3 className="text-[11px] font-medium uppercase tracking-[0.05em] text-[#9CA3AF] dark:text-slate-500 mb-1 transition-colors">{title}</h3>
+    <h3 className="text-[11px] font-medium tracking-tight text-[#9CA3AF] dark:text-slate-500 mb-1 transition-colors">{title}</h3>
     <p className="text-3xl font-semibold text-[#111827] dark:text-white tracking-[-0.02em] leading-none transition-colors tabular-nums">{value}</p>
   </div>
 );
