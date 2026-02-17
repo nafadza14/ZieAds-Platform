@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
 import { 
   TrendingUp, 
@@ -9,329 +9,290 @@ import {
   MousePointer2, 
   DollarSign, 
   AlertCircle,
-  Lightbulb,
-  ArrowUpRight,
-  ShieldAlert,
-  ChevronRight,
-  Home,
-  Sun,
-  Moon,
   Zap,
   ArrowRight,
   Sparkles,
-  Fingerprint
+  LayoutDashboard,
+  Target,
+  Activity,
+  Award,
+  ChevronRight,
+  Sun,
+  Moon,
+  ArrowUpRight,
+  Clock,
+  ShieldAlert
 } from 'lucide-react';
-import { Business, Recommendation, Campaign } from '../types';
-import { getRecommendations } from '../services/geminiService';
+import { Workspace, Campaign, AIInsight } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
-  activeBusiness: Business | null;
+  activeWorkspace: Workspace | null;
   toggleTheme?: () => void;
   isDarkMode?: boolean;
+  insights: AIInsight[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ activeBusiness, toggleTheme, isDarkMode }) => {
+const Dashboard: React.FC<DashboardProps> = ({ activeWorkspace, toggleTheme, isDarkMode, insights }) => {
   const navigate = useNavigate();
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [loadingRecs, setLoadingRecs] = useState(false);
 
-  const campaigns = activeBusiness?.campaigns || [];
-
-  useEffect(() => {
-    if (campaigns.length > 0) {
-      loadRecommendations();
-    }
-  }, [campaigns.length, activeBusiness?.id]);
-
-  const loadRecommendations = async () => {
-    setLoadingRecs(true);
-    try {
-      const recs = await getRecommendations(campaigns);
-      setRecommendations(recs);
-    } catch (e) {
-      console.error("AI Recommendation error:", e);
-    } finally {
-      setLoadingRecs(false);
-    }
+  // Mocked state for unified overview metrics
+  const unifiedStats = {
+    spend: 12450.80,
+    revenue: 42890.30,
+    roas: 3.44,
+    cpa: 2.15
   };
 
-  const totalSpend = campaigns.reduce((acc, c) => acc + (c.metrics?.spend || 0), 0);
-  const totalConversions = campaigns.reduce((acc, c) => acc + (c.metrics?.conversions || 0), 0);
-  const totalClicks = campaigns.reduce((acc, c) => acc + (c.metrics?.clicks || 0), 0);
-  const avgRoas = campaigns.length > 0 
-    ? (campaigns.reduce((acc, c) => acc + (c.metrics?.roas || 0), 0) / campaigns.length).toFixed(2) 
-    : '0';
-
-  const chartData = [
-    { name: 'Mon', spend: totalSpend * 0.1, conv: totalConversions * 0.1 },
-    { name: 'Tue', spend: totalSpend * 0.12, conv: totalConversions * 0.11 },
-    { name: 'Wed', spend: totalSpend * 0.15, conv: totalConversions * 0.18 },
-    { name: 'Thu', spend: totalSpend * 0.2, conv: totalConversions * 0.22 },
-    { name: 'Fri', spend: totalSpend * 0.18, conv: totalConversions * 0.15 },
-    { name: 'Sat', spend: totalSpend * 0.13, conv: totalConversions * 0.12 },
-    { name: 'Sun', spend: totalSpend * 0.12, conv: totalConversions * 0.12 },
+  const platformDistribution = [
+    { name: 'Meta', value: 45, color: '#1877F2' },
+    { name: 'Google', value: 35, color: '#DB4437' },
+    { name: 'TikTok', value: 20, color: '#000000' },
   ];
 
-  const hasBrandDNA = activeBusiness?.brandProfile?.dna;
+  const topCreatives = [
+    { id: 'c1', name: 'Product Hero V1', ctr: 4.8, roas: 5.2, img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=200' },
+    { id: 'c2', name: 'Minimalist Dark', ctr: 3.9, roas: 4.1, img: 'https://images.unsplash.com/photo-1556742049-02e49f61b4ee?auto=format&fit=crop&q=80&w=200' },
+    { id: 'c3', name: 'Viral Hook UGC', ctr: 6.2, roas: 3.8, img: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&q=80&w=200' },
+  ];
+
+  const chartData = [
+    { date: 'Feb 07', spend: 400, revenue: 1200 },
+    { date: 'Feb 08', spend: 550, revenue: 1800 },
+    { date: 'Feb 09', spend: 300, revenue: 900 },
+    { date: 'Feb 10', spend: 700, revenue: 2500 },
+    { date: 'Feb 11', spend: 600, revenue: 2100 },
+    { date: 'Feb 12', spend: 850, revenue: 3200 },
+    { date: 'Feb 13', spend: 500, revenue: 1900 },
+  ];
+
+  const unresolvedInsights = insights.filter(i => !i.resolved);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans selection:bg-teal-100 dark:selection:bg-teal-900/30">
-      <header className="space-y-4">
-        <div className="flex items-center justify-between">
-          <nav className="flex items-center gap-2 text-[13px] font-medium tracking-tight text-slate-400">
-            <div className="flex items-center gap-1.5 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
-              <Home size={14} />
-              <span>Home</span>
-            </div>
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <nav className="flex items-center gap-2 text-[12px] font-bold tracking-tight text-slate-400 uppercase">
+            <LayoutDashboard size={14} className="text-primary" />
+            <span>Command Center</span>
             <ChevronRight size={12} className="opacity-50" />
-            <div className="flex items-center gap-1.5 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
-              <span>{activeBusiness?.name || 'Business'}</span>
-            </div>
-            <ChevronRight size={12} className="opacity-50" />
-            <span className="text-slate-900 dark:text-white font-semibold transition-colors">Overview</span>
+            <span className="text-slate-900 dark:text-white">{activeWorkspace?.name}</span>
           </nav>
-
-          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-full transition-all relative">
-            <div 
-              className={`absolute top-1 left-1 bottom-1 w-[34px] bg-white dark:bg-slate-800 rounded-full shadow-sm transition-all duration-300 ease-in-out transform ${isDarkMode ? 'translate-x-[34px]' : 'translate-x-0'}`}
-            ></div>
-            <button 
-              onClick={!isDarkMode ? undefined : toggleTheme}
-              className={`relative flex items-center justify-center w-[34px] h-[34px] rounded-full transition-colors z-10 ${!isDarkMode ? 'text-slate-900' : 'text-slate-500 hover:text-slate-400'}`}
-              aria-label="Light mode"
-            >
-              <Sun size={16} strokeWidth={2.5} />
-            </button>
-            <button 
-              onClick={isDarkMode ? undefined : toggleTheme}
-              className={`relative flex items-center justify-center w-[34px] h-[34px] rounded-full transition-colors z-10 ${isDarkMode ? 'text-teal-400' : 'text-slate-400 hover:text-slate-50'}`}
-              aria-label="Dark mode"
-            >
-              <Moon size={16} strokeWidth={2.5} />
-            </button>
-          </div>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">AI-First Overview</h1>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold text-[#111827] dark:text-slate-100 tracking-[-0.02em] mb-1 transition-colors">Business performance</h1>
-            <p className="text-[#4B5563] dark:text-slate-400 font-normal text-base transition-colors">
-              Monitoring active campaigns for <span className="font-semibold text-primary">{activeBusiness?.name}</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-[11px] font-medium tracking-tight text-[#6B7280] dark:text-slate-400 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                  AI optimization live
-              </div>
-              <div className="flex items-center gap-2 text-[11px] font-medium tracking-tight text-primary dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-4 py-2 rounded-full border border-teal-100 dark:border-teal-500/20 shadow-sm transition-colors">
-                  <ShieldAlert size={14} />
-                  Fraud protection active
-              </div>
-          </div>
+        <div className="flex items-center gap-3">
+           <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-primary transition-all shadow-sm">
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+           </button>
+           <button className="px-6 py-2.5 tosca-bg text-white font-black rounded-xl text-xs shadow-xl shadow-teal-500/20 flex items-center gap-2 uppercase tracking-widest">
+             <Activity size={16} /> Live Pulse
+           </button>
         </div>
       </header>
 
-      {/* Brand DNA Quick Action Card */}
-      {!hasBrandDNA ? (
-        <div className="bg-gradient-to-br from-[#111827] to-[#1e293b] rounded-[40px] p-8 md:p-12 text-white relative overflow-hidden group">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 blur-[80px] rounded-full group-hover:scale-110 transition-transform duration-700"></div>
-           <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-16">
-              <div className="w-20 h-20 tosca-bg rounded-3xl flex items-center justify-center text-white shrink-0 shadow-2xl shadow-teal-500/20">
-                <Zap size={40} fill="currentColor" />
-              </div>
-              <div className="space-y-4 text-center md:text-left">
-                <h2 className="text-3xl font-bold tracking-tight">Your Brand DNA is missing.</h2>
-                <p className="text-slate-400 max-w-xl font-medium leading-relaxed">To enable autonomous ad generation, ZieAds needs to parse your website, logo, and brand guidelines to establish a marketing blueprint.</p>
-              </div>
-              <button 
-                onClick={() => navigate('/scanner')}
-                className="md:ml-auto px-8 py-4 tosca-bg text-white font-bold rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-teal-500/20 font-display"
-              >
-                Scan brand now <ArrowRight size={20} />
-              </button>
-           </div>
-        </div>
-      ) : (
-        <div className="bg-gradient-to-r from-teal-500/5 to-primary/5 dark:from-teal-500/10 dark:to-primary/10 rounded-[40px] border border-teal-100 dark:border-teal-500/20 p-8 flex flex-col md:flex-row items-center gap-8 group animate-in slide-in-from-top-4 duration-700">
-           <div className="flex items-center gap-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary opacity-20 blur-xl rounded-full scale-150 animate-pulse"></div>
-                <div className="w-16 h-16 rounded-2xl tosca-bg flex items-center justify-center text-white relative shadow-lg">
-                   <Fingerprint size={32} />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white transition-colors">Your Strong DNA is {activeBusiness?.brandProfile?.name}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Wanna change or try another option?</p>
-              </div>
-           </div>
-           <div className="md:ml-auto flex items-center gap-4">
-              <button 
-                onClick={() => navigate('/builder')}
-                className="px-8 py-4 tosca-bg text-white font-bold rounded-2xl shadow-xl shadow-teal-500/20 hover:scale-105 transition-all flex items-center gap-2"
-              >
-                Create new ad <ArrowRight size={18} />
-              </button>
-              <button 
-                onClick={() => navigate('/scanner')}
-                className="px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-              >
-                Scan brand now
-              </button>
-           </div>
-        </div>
-      )}
-
-      {/* Metric Cards */}
+      {/* Hero Stats: Unified Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Total spend" value={`$${totalSpend.toLocaleString()}`} icon={<DollarSign size={20} />} trend="+12.5%" />
-        <MetricCard title="Total clicks" value={totalClicks.toLocaleString()} icon={<MousePointer2 size={20} />} trend="+8.2%" trendColor="green" />
-        <MetricCard title="Conversions" value={totalConversions.toLocaleString()} icon={<Users size={20} />} trend="+15.1%" trendColor="green" />
-        <MetricCard title="Avg. roas" value={`${avgRoas}x`} icon={<TrendingUp size={20} />} trend="+2.4%" trendColor="green" />
+        <MetricCard title="Unified Spend" value={`$${unifiedStats.spend.toLocaleString()}`} trend="+14.2%" trendUp icon={<DollarSign size={18} />} />
+        <MetricCard title="Unified Revenue" value={`$${unifiedStats.revenue.toLocaleString()}`} trend="+22.5%" trendUp icon={<Award size={18} />} />
+        <MetricCard title="Unified ROAS" value={`${unifiedStats.roas}x`} trend="+0.4x" trendUp icon={<TrendingUp size={18} />} />
+        <MetricCard title="Unified CPA" value={`$${unifiedStats.cpa}`} trend="-12%" trendUp icon={<Target size={18} />} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Growth trends</h3>
-            <div className="flex gap-2 font-medium text-[11px] tracking-tight">
-                <span className="text-primary dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-2.5 py-1 rounded-full">Spend</span>
-                <span className="text-slate-400 dark:text-slate-500 px-2.5 py-1 rounded-full">Conversions</span>
-            </div>
-          </div>
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#14B8A6" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#14B8A6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#1e293b" : "#f1f5f9"} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} />
-                <Tooltip 
-                  contentStyle={{
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)', 
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
-                    color: isDarkMode ? '#ffffff' : '#000000'
-                  }}
-                />
-                <Area type="monotone" dataKey="spend" stroke="#14B8A6" strokeWidth={3} fillOpacity={1} fill="url(#colorSpend)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-500/10 text-primary dark:text-teal-400 transition-colors">
-              <Lightbulb size={20} />
-            </div>
-            <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">AI insights</h3>
-          </div>
-          
-          <div className="flex-1 space-y-4">
-            {loadingRecs ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="animate-pulse bg-slate-50 dark:bg-slate-800 h-24 rounded-2xl transition-colors"></div>
-                ))}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        {/* Left Col: Main Insights & Charts */}
+        <div className="xl:col-span-8 space-y-8">
+           {/* Performance Trends */}
+           <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                <BarChart size={120} />
               </div>
-            ) : recommendations.length > 0 ? (
-              recommendations.map((rec) => (
-                <div key={rec.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 hover:border-teal-200 dark:hover:border-teal-500/50 transition-all group">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-semibold tracking-tight text-primary dark:text-teal-400 px-2 py-0.5 bg-teal-50 dark:bg-teal-500/20 rounded-lg transition-colors capitalize">{rec.type}</span>
-                    <span className="text-[11px] font-semibold text-green-600 dark:text-green-400 flex items-center gap-1 transition-colors tabular-nums">
-                      <ArrowUpRight size={14} /> {rec.impact}
-                    </span>
-                  </div>
-                  <h4 className="font-semibold text-[13px] mb-1 tracking-tight text-[#1F2937] dark:text-slate-200 transition-colors">{rec.title}</h4>
-                  <p className="text-[12px] text-[#6B7280] dark:text-slate-400 leading-relaxed font-normal transition-colors">{rec.description}</p>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-12 px-4 flex flex-col items-center justify-center h-full">
-                <AlertCircle className="text-slate-300 dark:text-slate-600 mb-3 transition-colors" size={40} />
-                <p className="text-[#9CA3AF] dark:text-slate-500 text-sm font-medium transition-colors">Launch a campaign to get AI insights.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-        <div className="p-7 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <h3 className="font-semibold text-lg tracking-[-0.01em] text-[#111827] dark:text-slate-100 transition-colors">Active campaigns</h3>
-          <button className="text-primary dark:text-teal-400 text-xs font-bold hover:underline transition-colors tracking-tight">View all</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[11px] font-semibold tracking-tight text-[#6B7280] dark:text-slate-500 transition-colors border-b border-slate-100 dark:border-slate-800">
-                <th className="px-7 py-4">Campaign</th>
-                <th className="px-7 py-4">Status</th>
-                <th className="px-7 py-4">Platforms</th>
-                <th className="px-7 py-4">Roas</th>
-                <th className="px-7 py-4">Budget</th>
-                <th className="px-7 py-4">Spend</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 tabular-nums">
-              {campaigns.length > 0 ? campaigns.map((c) => (
-                <tr key={c.id} className="text-sm text-[#374151] dark:text-slate-400 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                  <td className="px-7 py-5">
-                    <p className="font-semibold text-[#111827] dark:text-slate-200 tracking-tight transition-colors">{c.name}</p>
-                    <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-medium uppercase transition-colors">{c.id.slice(0, 8)}</p>
-                  </td>
-                  <td className="px-7 py-5">
-                    <span className="flex items-center gap-1.5 text-xs font-medium transition-colors">
-                      <span className={`w-1.5 h-1.5 rounded-full ${c.status === 'active' ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-700'}`}></span>
-                      {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-7 py-5">
-                    <div className="flex gap-1">
-                        {c.platforms.map(p => (
-                            <span key={p} className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold text-slate-600 dark:text-slate-400 transition-colors">{p}</span>
-                        ))}
+              <div className="flex items-center justify-between mb-8">
+                 <div>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">Financial Velocity</h3>
+                    <p className="text-sm font-medium text-slate-500">Unified spend vs revenue tracking (7d)</p>
+                 </div>
+                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                       <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
+                       <span className="text-[10px] font-black uppercase text-slate-400">Revenue</span>
                     </div>
-                  </td>
-                  <td className="px-7 py-5 text-primary dark:text-teal-400 font-bold">{c.metrics?.roas || 0}x</td>
-                  <td className="px-7 py-5 font-medium text-slate-600 dark:text-slate-300 text-xs">${c.budget}/day</td>
-                  <td className="px-7 py-5 font-medium text-slate-600 dark:text-slate-300 text-xs">${c.metrics?.spend || 0}</td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={6} className="px-7 py-12 text-center text-slate-400 dark:text-slate-600 font-medium italic transition-colors">No campaigns found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <div className="flex items-center gap-2">
+                       <div className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+                       <span className="text-[10px] font-black uppercase text-slate-400">Spend</span>
+                    </div>
+                 </div>
+              </div>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                   <AreaChart data={chartData}>
+                      <defs>
+                         <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#14B8A6" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#14B8A6" stopOpacity={0}/>
+                         </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.3} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
+                        itemStyle={{ fontWeight: 800 }}
+                      />
+                      <Area type="monotone" dataKey="revenue" stroke="#14B8A6" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                      <Area type="monotone" dataKey="spend" stroke="#CBD5E1" strokeWidth={2} fillOpacity={0} />
+                   </AreaChart>
+                </ResponsiveContainer>
+              </div>
+           </div>
+
+           {/* Platform & Creative Grids */}
+           <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] border border-slate-200 dark:border-slate-800 shadow-sm">
+                 <h3 className="text-lg font-black text-slate-900 dark:text-white font-display tracking-tight mb-6">Budget Distribution</h3>
+                 <div className="space-y-6">
+                    {platformDistribution.map(p => (
+                      <div key={p.name} className="space-y-2">
+                         <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-widest text-slate-400">
+                            <span className="flex items-center gap-2">
+                               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }}></div>
+                               {p.name}
+                            </span>
+                            <span className="text-slate-900 dark:text-white">{p.value}%</span>
+                         </div>
+                         <div className="h-2 w-full bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${p.value}%`, backgroundColor: p.color }}></div>
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] border border-slate-200 dark:border-slate-800 shadow-sm">
+                 <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white font-display tracking-tight">Top Creatives</h3>
+                    <button className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">View All</button>
+                 </div>
+                 <div className="space-y-4">
+                    {topCreatives.map(c => (
+                      <div key={c.id} className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 group transition-all hover:border-primary/30">
+                         <img src={c.img} className="w-12 h-12 rounded-xl object-cover shadow-sm" alt="" />
+                         <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{c.name}</h4>
+                            <div className="flex gap-3 mt-0.5">
+                               <span className="text-[10px] font-black text-teal-500">{c.roas}x ROAS</span>
+                               <span className="text-[10px] font-bold text-slate-400">{c.ctr}% CTR</span>
+                            </div>
+                         </div>
+                         <ArrowUpRight size={16} className="text-slate-300 group-hover:text-primary transition-colors" />
+                      </div>
+                    ))}
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* Right Col: AI Alerts & Optimization Hub */}
+        <div className="xl:col-span-4 space-y-8">
+           <div className="bg-[#111827] rounded-[40px] p-8 text-white relative overflow-hidden group shadow-2xl shadow-slate-950/20">
+              <div className="absolute top-0 right-0 w-32 h-32 tosca-bg/10 blur-[60px] rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000"></div>
+              
+              <div className="flex items-center gap-3 mb-8">
+                 <div className="w-12 h-12 rounded-2xl bg-teal-500/20 text-teal-400 flex items-center justify-center shadow-lg shadow-teal-500/5">
+                    <Zap size={24} fill="currentColor" />
+                 </div>
+                 <div>
+                    <h3 className="text-xl font-black font-display tracking-tight">AI Alert Panel</h3>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Real-time Signals</p>
+                 </div>
+              </div>
+
+              <div className="space-y-5">
+                 {unresolvedInsights.length > 0 ? unresolvedInsights.map(insight => (
+                   <div key={insight.id} className={`p-5 rounded-[28px] border transition-all hover:scale-[1.02] ${
+                     insight.severity === 'critical' 
+                     ? 'bg-red-500/10 border-red-500/20' 
+                     : insight.severity === 'warning' 
+                       ? 'bg-orange-500/10 border-orange-500/20' 
+                       : 'bg-blue-500/10 border-blue-500/20'
+                   }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                         <div className={`w-2 h-2 rounded-full ${
+                           insight.severity === 'critical' ? 'bg-red-500 animate-pulse' : 
+                           insight.severity === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
+                         }`}></div>
+                         <span className={`text-[10px] font-black uppercase tracking-widest ${
+                           insight.severity === 'critical' ? 'text-red-400' : 
+                           insight.severity === 'warning' ? 'text-orange-400' : 'text-blue-400'
+                         }`}>{insight.insight_type.replace('_', ' ')}</span>
+                      </div>
+                      <p className="text-sm font-medium text-slate-300 leading-relaxed">{insight.message}</p>
+                      <button className="mt-4 flex items-center gap-2 text-[11px] font-black text-white group/btn">
+                         Take Action <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                      </button>
+                   </div>
+                 )) : (
+                   <div className="py-12 text-center space-y-4 opacity-50">
+                      <Clock size={40} className="mx-auto text-slate-600" />
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Awaiting system signals...</p>
+                   </div>
+                 )}
+              </div>
+
+              <button className="w-full mt-8 py-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all">
+                Dismiss All Signals
+              </button>
+           </div>
+
+           <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] border border-slate-200 dark:border-slate-800 shadow-sm">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white font-display tracking-tight mb-6">Scale Intensity</h3>
+              <div className="space-y-6">
+                 <div className="flex justify-between items-center px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="flex flex-col">
+                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Risk Level</span>
+                       <span className="text-sm font-bold text-slate-900 dark:text-white">Balanced Control</span>
+                    </div>
+                    <div className="flex gap-1.5">
+                       {[1, 2, 3].map(i => (
+                         <div key={i} className={`w-3 h-3 rounded-full ${i <= 2 ? 'bg-teal-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                       ))}
+                    </div>
+                 </div>
+                 
+                 <div className="p-5 bg-teal-500/5 rounded-3xl border border-teal-500/10 space-y-3">
+                    <p className="text-[11px] font-black text-primary uppercase tracking-widest">Automation Status</p>
+                    <div className="flex items-center gap-2">
+                       <ShieldAlert size={16} className="text-teal-500" />
+                       <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Click Fraud Protection Active</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <Sparkles size={16} className="text-teal-500" />
+                       <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Smart Budget Re-flow Active</span>
+                    </div>
+                 </div>
+              </div>
+           </div>
         </div>
       </div>
     </div>
   );
 };
 
-const MetricCard = ({ title, value, icon, trend, trendColor = 'green' }: { title: string, value: string, icon: React.ReactNode, trend: string, trendColor?: string }) => (
-  <div className="bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg group">
-    <div className="flex items-center justify-between mb-4">
-      <div className="w-11 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-[#6B7280] dark:text-slate-400 group-hover:tosca-bg group-hover:text-white transition-all duration-300">
-        {icon}
-      </div>
-      <span className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-colors tabular-nums ${trendColor === 'green' ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10' : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10'}`}>{trend}</span>
+const MetricCard = ({ title, value, trend, trendUp, icon }: any) => (
+  <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-2xl hover:scale-[1.02] transition-all duration-500 relative overflow-hidden">
+    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+       {icon}
     </div>
-    <h3 className="text-[11px] font-medium tracking-tight text-[#9CA3AF] dark:text-slate-500 mb-1 transition-colors">{title}</h3>
-    <p className="text-3xl font-semibold text-[#111827] dark:text-white tracking-[-0.02em] leading-none transition-colors tabular-nums">{value}</p>
+    <div className="flex items-center gap-3 mb-4">
+       <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:tosca-bg group-hover:text-white transition-all duration-500">
+          {icon}
+       </div>
+       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${trendUp ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+          {trend}
+       </span>
+    </div>
+    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+    <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums">{value}</p>
   </div>
 );
 

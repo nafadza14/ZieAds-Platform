@@ -343,16 +343,18 @@ const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, current
                          <button 
                           onClick={handleCommitDNA}
                           disabled={isSaving}
-                          className="w-full h-14 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-xs flex items-center justify-center gap-2"
+                          className={`w-full h-14 font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 ${
+                            isSaving ? 'bg-slate-100 text-slate-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 shadow-sm'
+                          }`}
                          >
                            {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Database size={16} />}
-                           {isSaving ? 'Syncing...' : 'Save to database'}
+                           {isSaving ? 'Syncing DNA...' : 'Save DNA to Vault'}
                          </button>
                          <button 
                           onClick={handleStartAd}
                           className="w-full h-14 tosca-bg text-white font-bold rounded-2xl shadow-xl shadow-teal-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs flex items-center justify-center gap-2"
                          >
-                           Create an ad <ArrowRight size={16} />
+                           Launch Campaign with this DNA <ArrowRight size={16} />
                          </button>
                       </div>
                    </div>
@@ -370,13 +372,6 @@ const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, current
     </div>
   );
 };
-
-const FeatureBox = ({ icon, label }: { icon: React.ReactNode, label: string }) => (
-  <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-50 dark:border-slate-800 transition-colors">
-    <div className="text-primary dark:text-teal-400">{icon}</div>
-    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 tracking-tight">{label}</span>
-  </div>
-);
 
 const AnalysisBox = ({ title, label, active, completed, text }: { title: string, label: string, active: boolean, completed: boolean, text: string }) => (
   <div className={`p-8 rounded-[32px] border transition-all duration-500 ${

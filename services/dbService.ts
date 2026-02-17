@@ -9,7 +9,7 @@ export const orchestrateCampaignPublish = async (
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("No authenticated user");
 
-  // 1. Create Campaign Record
+  // 1. Create Campaign Record with the new UI fields
   const { data: campaignData, error: campaignError } = await supabase
     .from('campaigns')
     .insert([{
@@ -55,7 +55,7 @@ export const orchestrateCampaignPublish = async (
       campaign_id: campaignData.id,
       platforms: campaign.platforms,
       creative_count: creatives.length,
-      model: 'gemini-3-flash'
+      model: 'gemini-3-flash-preview'
     }
   }]);
 
@@ -67,6 +67,7 @@ export const updateBusinessBrandProfile = async (businessId: string, profile: Br
   if (!user) throw new Error("Not authenticated");
 
   // Use UPSERT logic on business_id (requires unique constraint in DB)
+  // Ensure the 'dna' field is included in the payload
   const payload = {
     business_id: businessId,
     name: profile.name,
@@ -77,7 +78,7 @@ export const updateBusinessBrandProfile = async (businessId: string, profile: Br
     products: profile.products,
     audiences: profile.audiences,
     logo_url: profile.logoUrl,
-    dna: profile.dna 
+    dna: profile.dna // This is the AI analysis result
   };
 
   const { error } = await supabase

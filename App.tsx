@@ -13,202 +13,24 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminLibrary from './components/AdminLibrary';
 import AuthPage from './components/AuthPage';
 import MyProjects from './components/MyProjects';
-import { Business, UserProfile, Campaign, BrandProfile } from './types';
+import { Workspace, AIInsight } from './types';
 import { supabase } from './services/supabaseClient';
-import { fetchUserProfile } from './services/dbService';
 
-const ADMIN_MOCK_USER_ID = 'admin-uuid-0000-0000-000000000000';
-const ADMIN_EMAIL = 'admin@zieads.com';
+const MOCK_ADMIN_ID = '00000000-0000-0000-0000-000000000000';
 
 const App: React.FC = () => {
-  const [isSystemAdmin, setIsSystemAdmin] = useState<boolean>(() => {
-    return localStorage.getItem('zieads_admin_bypass') === 'true';
-  });
-
-  const [session, setSession] = useState<any>(() => {
-    if (localStorage.getItem('zieads_admin_bypass') === 'true') {
-      return { user: { id: ADMIN_MOCK_USER_ID, email: ADMIN_EMAIL } };
-    }
-    return null;
-  });
-
-  const [showAuth, setShowAuth] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [activeBusinessId, setActiveBusinessId] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
-  });
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
+  const [insights, setInsights] = useState<AIInsight[]>([]);
 
+  // Theme Logic
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (isDarkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [isDarkMode]);
-
-  const initAdminData = useCallback(() => {
-    setUserProfile({
-      id: ADMIN_MOCK_USER_ID,
-      fullName: 'ZieAds Superadmin',
-      companyName: 'ZieAds Core Operations',
-      brandSummary: 'Global System Administrator',
-      brandVoice: 'Professional',
-      websiteUrl: 'https://zieads.com'
-    });
-    const adminBiz: Business = {
-      id: 'admin-global-view',
-      name: 'ZieAds Network',
-      brandProfile: null,
-      campaigns: []
-    };
-    setBusinesses([adminBiz]);
-    setActiveBusinessId(adminBiz.id);
-    setLoading(false);
-  }, []);
-
-  const fetchData = useCallback(async (userId: string) => {
-    try {
-      const { data: bizData, error } = await supabase
-        .from('businesses')
-        .select(`*, brand_profiles (*), campaigns (*)`)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      if (bizData && Array.isArray(bizData)) {
-        const mapped: Business[] = bizData
-          .filter((b: any) => b !== null)
-          .map((b: any) => {
-            const profiles = Array.isArray(b.brand_profiles) ? b.brand_profiles : [];
-            const rawCampaigns: any[] = Array.isArray(b.campaigns) ? b.campaigns : [];
-            
-            return {
-              id: b.id,
-              name: b.name || 'Unnamed Business',
-              brandProfile: profiles.length > 0 ? (profiles[0] || null) : null,
-              campaigns: rawCampaigns
-                .filter((c: any) => c !== null)
-                .sort((a: any, b: any) => {
-                  const dateA = a?.created_at ? new Date(a.created_at).getTime() : 0;
-                  const dateB = b?.created_at ? new Date(b.created_at).getTime() : 0;
-                  return dateB - dateA;
-                })
-            };
-          });
-        
-        setBusinesses(mapped);
-        if (mapped.length > 0 && !activeBusinessId) {
-          setActiveBusinessId(mapped[0].id);
-        }
-      } else {
-        setBusinesses([]);
-        setActiveBusinessId(null);
-      }
-    } catch (e: any) {
-      console.error("Database fetch error:", e.message || e);
-      setBusinesses([]);
-    }
-  }, [activeBusinessId]);
-
-  const initData = useCallback(async (userId: string) => {
-    setLoading(true);
-    try {
-      const profile = await fetchUserProfile();
-      setUserProfile(profile);
-      await fetchData(userId);
-    } catch (err) {
-      console.error("Initialization error:", err);
-      await fetchData(userId);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchData]);
-
-  const handleAuthSuccess = useCallback((sbSession: any) => {
-    if (!sbSession || !sbSession.user) return;
-    const email = sbSession.user.email?.toLowerCase();
-    
-    if (email === ADMIN_EMAIL || localStorage.getItem('zieads_admin_bypass') === 'true') {
-      localStorage.setItem('zieads_admin_bypass', 'true');
-      setIsSystemAdmin(true);
-      setSession(sbSession);
-      initAdminData();
-    } else {
-      setIsSystemAdmin(false);
-      setSession(sbSession);
-      initData(sbSession.user.id);
-    }
-    setShowAuth(false);
-  }, [initAdminData, initData]);
-
-  useEffect(() => {
-    if (isSystemAdmin) {
-      initAdminData();
-      return;
-    }
-
-    const checkSession = async () => {
-      try {
-        const { data: { session: sbSession }, error } = await supabase.auth.getSession();
-        
-        // Handle "Invalid Refresh Token" by clearing local state
-        if (error && error.message.includes('Refresh Token')) {
-          await supabase.auth.signOut();
-          setSession(null);
-          setLoading(false);
-          return;
-        }
-
-        if (sbSession) {
-          handleAuthSuccess(sbSession);
-        } else {
-          setLoading(false);
-        }
-      } catch (err) {
-        setLoading(false);
-      }
-    };
-
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sbSession) => {
-      if (localStorage.getItem('zieads_admin_bypass') === 'true') return;
-      
-      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !sbSession) {
-        setBusinesses([]);
-        setUserProfile(null);
-        setActiveBusinessId(null);
-        setIsSystemAdmin(false);
-        setSession(null);
-        setLoading(false);
-      } else if (sbSession) {
-        handleAuthSuccess(sbSession);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [isSystemAdmin, handleAuthSuccess, initAdminData]);
-
-  const handleLogout = async () => {
-    localStorage.removeItem('zieads_admin_bypass');
-    await supabase.auth.signOut();
-    window.location.href = '#/'; 
-    window.location.reload(); 
-  };
-
-  const handleScanComplete = useCallback(async () => {
-    if (session?.user?.id) {
-      await fetchData(session.user.id);
-    }
-  }, [fetchData, session]);
-
-  const activeBusiness = useMemo(() => {
-    if (!activeBusinessId || !Array.isArray(businesses)) return null;
-    return businesses.find(b => b && b.id === activeBusinessId) || null;
-  }, [businesses, activeBusinessId]);
 
   const toggleTheme = () => {
     const newTheme = !isDarkMode ? 'dark' : 'light';
@@ -216,64 +38,186 @@ const App: React.FC = () => {
     localStorage.setItem('theme', newTheme);
   };
 
+  /**
+   * DATA PROVISIONING ENGINE
+   * Ensures every session has at least one valid workspace.
+   */
+  const bootstrapAppData = useCallback(async (userId: string, userEmail: string) => {
+    const isAdmin = userEmail === 'admin@zieads.com';
+
+    try {
+      if (isAdmin) {
+        // 1. ADMIN FAST-PATH (No DB calls)
+        const adminWs: Workspace = {
+          id: 'admin-master-node',
+          name: 'ZieAds Master Command',
+          owner_id: userId,
+          plan_type: 'scale',
+          created_at: new Date().toISOString()
+        };
+        setWorkspaces([adminWs]);
+        setActiveWorkspaceId(adminWs.id);
+        setInsights([{
+          id: 'ins-admin-1',
+          workspace_id: adminWs.id,
+          entity_type: 'automation',
+          entity_id: 'global',
+          insight_type: 'budget_imbalance',
+          severity: 'info',
+          message: 'System Integrity: All neural nodes are operating at peak efficiency.',
+          resolved: false,
+          created_at: new Date().toISOString()
+        }]);
+        return;
+      }
+
+      // 2. STANDARD USER PATH
+      const { data: wsData, error: wsError } = await supabase
+        .from('workspaces')
+        .select('*')
+        .eq('owner_id', userId);
+
+      if (!wsError && wsData && wsData.length > 0) {
+        setWorkspaces(wsData);
+        setActiveWorkspaceId(wsData[0].id);
+      } else {
+        // Try creating a default workspace
+        const { data: newWs, error: createError } = await supabase
+          .from('workspaces')
+          .insert([{ name: 'My Business Workspace', owner_id: userId, plan_type: 'free' }])
+          .select()
+          .single();
+        
+        if (createError || !newWs) throw new Error("DB Initialization Failed");
+
+        setWorkspaces([newWs]);
+        setActiveWorkspaceId(newWs.id);
+      }
+    } catch (err) {
+      console.warn("Resilience Mode: Booting with virtual workspace data.");
+      const virtualWs: Workspace = {
+        id: 'virtual-node-' + userId.substring(0, 8),
+        name: 'Personal Workspace',
+        owner_id: userId,
+        plan_type: 'starter',
+        created_at: new Date().toISOString()
+      };
+      setWorkspaces([virtualWs]);
+      setActiveWorkspaceId(virtualWs.id);
+    }
+  }, []);
+
+  /**
+   * AUTH ORCHESTRATOR
+   */
+  useEffect(() => {
+    const checkAuth = async () => {
+      setLoading(true);
+      try {
+        // 1. Check for Admin Bypass in Storage
+        const isAdminBypass = localStorage.getItem('zieads_admin_bypass') === 'true';
+        if (isAdminBypass) {
+          const adminSession = { user: { id: MOCK_ADMIN_ID, email: 'admin@zieads.com' } };
+          setSession(adminSession);
+          await bootstrapAppData(MOCK_ADMIN_ID, 'admin@zieads.com');
+          setLoading(false);
+          return;
+        }
+
+        // 2. Standard Supabase Session
+        const { data: { session: sbSession } } = await supabase.auth.getSession();
+        if (sbSession?.user) {
+          setSession(sbSession);
+          await bootstrapAppData(sbSession.user.id, sbSession.user.email || '');
+        }
+      } catch (err) {
+        console.error("Auth Failure:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for Auth Changes (Supabase Only)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (localStorage.getItem('zieads_admin_bypass') === 'true') return;
+
+      if (newSession?.user) {
+        setSession(newSession);
+        await bootstrapAppData(newSession.user.id, newSession.user.email || '');
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setWorkspaces([]);
+        setActiveWorkspaceId(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [bootstrapAppData]);
+
+  const activeWorkspace = useMemo(() => 
+    workspaces.find(w => w.id === activeWorkspaceId) || null, 
+  [workspaces, activeWorkspaceId]);
+
+  const handleLogout = async () => {
+    localStorage.removeItem('zieads_admin_bypass');
+    await supabase.auth.signOut();
+    setSession(null);
+    setWorkspaces([]);
+    setActiveWorkspaceId(null);
+    window.location.hash = '#/';
+  };
+
   if (loading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-slate-950 transition-colors">
-        <div className="flex flex-col items-center gap-4">
-           <div className="w-12 h-12 tosca-bg rounded-xl animate-spin shadow-2xl"></div>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-sans">ZieAds network init...</p>
+      <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-6 animate-pulse">
+           <div className="w-16 h-16 tosca-bg rounded-3xl animate-spin shadow-2xl shadow-teal-500/20"></div>
+           <div className="text-center space-y-1">
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] font-sans">ZieAds Network</p>
+             <p className="text-[9px] font-bold text-teal-500 uppercase tracking-widest">Establishing Secure Command...</p>
+           </div>
         </div>
       </div>
     );
   }
 
-  if (!session) {
-    if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
-    return (
-      <Router>
+  return (
+    <Router>
+      {!session ? (
         <Routes>
-          <Route path="/" element={<LandingPage onLogin={() => setShowAuth(true)} />} />
+          <Route path="/" element={<LandingPage onLogin={() => (window.location.href = '#/auth')} />} />
+          <Route path="/auth" element={<AuthPage onBack={() => (window.location.href = '#/')} />} />
           <Route path="/use-cases" element={<UseCasesPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-      </Router>
-    );
-  }
-
-  return (
-    <Router>
-      <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
-        <Sidebar 
-          onLogout={handleLogout} 
-          activeBusiness={activeBusiness} 
-          businesses={businesses} 
-          onSwitchBusiness={(id) => setActiveBusinessId(id)} 
-          userEmail={session.user?.email}
-          isAdmin={isSystemAdmin}
-        />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <Routes>
-            {isSystemAdmin ? (
-              <>
-                <Route path="/" element={<AdminDashboard />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/library" element={<AdminLibrary />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </>
-            ) : (
-              <>
-                <Route path="/" element={<Dashboard activeBusiness={activeBusiness} toggleTheme={toggleTheme} isDarkMode={isDarkMode} />} />
-                <Route path="/projects" element={<MyProjects activeBusiness={activeBusiness} />} />
-                <Route path="/accounts" element={<AdAccountConnector />} />
-                <Route path="/fraud" element={<ClickFraudProtection />} />
-                <Route path="/scanner" element={<WebsiteScanner activeBusiness={activeBusiness} onScanComplete={handleScanComplete} currentProfile={activeBusiness?.brandProfile || null} />} />
-                <Route path="/builder" element={<CampaignBuilder brandProfile={activeBusiness?.brandProfile || null} onComplete={handleScanComplete} />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </>
-            )}
-          </Routes>
-        </main>
-      </div>
+      ) : (
+        <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
+          <Sidebar 
+            onLogout={handleLogout} 
+            activeWorkspace={activeWorkspace} 
+            workspaces={workspaces} 
+            onSwitchWorkspace={setActiveWorkspaceId} 
+            userEmail={session.user?.email}
+            insights={insights}
+          />
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
+            <Routes>
+              <Route path="/" element={<Dashboard activeWorkspace={activeWorkspace} toggleTheme={toggleTheme} isDarkMode={isDarkMode} insights={insights} />} />
+              <Route path="/campaigns/*" element={<MyProjects activeBusiness={null} />} />
+              <Route path="/creatives/generate" element={<CampaignBuilder brandProfile={null} onComplete={() => {}} />} />
+              <Route path="/creatives/library" element={<AdminLibrary />} />
+              <Route path="/automation" element={<ClickFraudProtection />} />
+              <Route path="/insights" element={<Dashboard activeWorkspace={activeWorkspace} toggleTheme={toggleTheme} isDarkMode={isDarkMode} insights={insights} />} />
+              <Route path="/integrations" element={<AdAccountConnector />} />
+              <Route path="/settings/*" element={<AdAccountConnector />} />
+              <Route path="/scanner" element={<WebsiteScanner activeBusiness={null} onScanComplete={() => {}} currentProfile={null} />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </main>
+        </div>
+      )}
     </Router>
   );
 };

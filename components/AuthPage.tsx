@@ -8,14 +8,12 @@ import {
   Lock, 
   AlertCircle, 
   CheckCircle2,
-  Github,
-  Chrome,
   ChevronLeft,
   Eye,
   EyeOff
 } from 'lucide-react';
 
-const LOGO_URL = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgNTAiPgogIDxyZWN0IHg9IjYwIiB5PSI1IiB3aWR0aD0iOTUiIGhlaWdodD0iNDAiIGZpbGw9IiMxNEI4QTYiLz4KICA8dGV4dCB4PSIwIiB5PSIzOCIgZmlsbD0iIzE0QjhBNiIgc3R5bGU9ImZvbnQ6Ym9sZCAzOHB4ICdQbHVzIEpha2FydGEgU2FucycsIHNhbnMtc2VyaWYiPlppZTwvdGV4dD4KICA8dGV4dCB4PSI2NSIgeT0iMzgiIGZpbGw9IiNmZmZmZmYiIHN0eWxlPSJmb250OmJvbGQgMzhweCAnUGx1cyBKYWthcnRhIFNhbnMnLCBzYW5zLXNlcmlmIj5BZHMuPC90ZXh0Pgo8L3N2Zz4=";
+const LOGO_URL = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMjAgMTAwIj4KICA8dGV4dCB4PSI1IiB5PSI3NSIgZmlsbD0iIzE0QjhBNiIgZm9udC1mYW1pbHk9IlBsdXMgSmFrYXJ0YSBTYW5zLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iODAwIiBmb250LXNpemU9IjcwIj5aaWU8L3RleHQ+CiAgPHJlY3QgeD0iMTE1IiB5PSIxNSIgd2lkdGg9IjIwMCIgaGVpZ2h0PSI3NSIgZmlsbD0iIzE0QjhBNiIgLz4KICA8dGV4dCB4PSIxMjUiIHk4Ijc1IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IlBsdXMgSmFrYXJ0YSBTYW5zLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iODAwIiBmb250LXNpemU9IjcwIj5BZHMuPC90ZXh0Pgo8L3N2Zz4=";
 
 interface AuthPageProps {
   onBack: () => void;
@@ -36,24 +34,24 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
 
     const cleanEmail = email.trim().toLowerCase();
     
-    // 1. Super Admin Hardcoded Bypass - Updated Email
+    // 1. ADMIN BYPASS LOGIC
     if (cleanEmail === 'admin@zieads.com' && password === 'asikasikjos14') {
       try {
         localStorage.setItem('zieads_admin_bypass', 'true');
-        // Ensure state persists before navigation
-        setTimeout(() => {
-          window.location.href = '#/'; 
-          window.location.reload();
-        }, 100);
+        // Clear real session if any exists
+        await supabase.auth.signOut();
+        // Force complete reload to trigger App.tsx orchestrator
+        window.location.hash = '#/';
+        window.location.reload();
         return;
       } catch (err) {
-        setError('Storage error. Please allow local storage.');
+        setError('Storage Error: Unable to initialize secure command.');
         setLoading(false);
         return;
       }
     }
 
-    // 2. Standard Auth Flow
+    // 2. STANDARD AUTH
     try {
       if (isLogin) {
         const { error: signInError } = await supabase.auth.signInWithPassword({ 
@@ -61,16 +59,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
           password 
         });
         if (signInError) throw signInError;
+        window.location.hash = '#/';
       } else {
         const { error: signUpError } = await supabase.auth.signUp({ 
           email: cleanEmail, 
           password 
         });
         if (signUpError) throw signUpError;
-        alert('Check your inbox for a verification email!');
+        alert('Check your inbox for a verification link!');
+        setIsLogin(true);
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please verify your credentials.');
+      setError(err.message || 'Access Denied. Check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -91,10 +91,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
           <img src={LOGO_URL} alt="ZieAds Logo" className="h-14 w-auto object-contain" />
           <div className="space-y-1">
             <h1 className="text-3xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-              {isLogin ? 'Welcome back' : 'Join ZieAds'}
+              {isLogin ? 'Command Access' : 'Create Identity'}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium">
-              {isLogin ? 'Enter your details to manage your ads' : 'Start your free trial today'}
+              {isLogin ? 'Login to your marketing command center' : 'Join the ZieAds autonomous network'}
             </p>
           </div>
         </div>
@@ -110,12 +110,12 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
 
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-2">Email address</label>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-2">Email Identity</label>
                 <div className="relative group">
                   <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={20} />
                   <input
                     type="email"
-                    placeholder="Enter Your Email Address"
+                    placeholder="name@company.com"
                     className="w-full h-14 pl-14 pr-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:bg-white dark:focus:bg-slate-950 focus:border-primary outline-none font-bold text-slate-900 dark:text-white transition-all"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -126,14 +126,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center ml-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Password</label>
-                  {isLogin && <button type="button" className="text-[11px] font-black text-primary hover:underline transition-all">Forgot?</button>}
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Secret Key</label>
                 </div>
                 <div className="relative group">
                   <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={20} />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter Your Password"
+                    placeholder="••••••••"
                     className="w-full h-14 pl-14 pr-12 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:bg-white dark:focus:bg-slate-950 focus:border-primary outline-none font-bold text-slate-900 dark:text-white transition-all"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -155,24 +154,24 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
               disabled={loading}
               className="w-full h-14 tosca-bg text-white font-black text-lg rounded-2xl shadow-xl shadow-teal-500/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="animate-spin" /> : <><span className="uppercase tracking-widest">{isLogin ? 'Sign in' : 'Create account'}</span><ArrowRight size={20} /></>}
+              {loading ? <Loader2 className="animate-spin" /> : <><span className="uppercase tracking-widest">{isLogin ? 'Enter Dashboard' : 'Initialize Account'}</span><ArrowRight size={20} /></>}
             </button>
           </form>
         </div>
 
         <div className="text-center">
           <p className="text-slate-500 dark:text-slate-400 font-medium">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
+            {isLogin ? "Need a workspace?" : "Already a member?"}{' '}
             <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-bold hover:underline transition-all">
-              {isLogin ? "Join for free" : "Log in now"}
+              {isLogin ? "Join now" : "Sign in"}
             </button>
           </p>
         </div>
 
         <div className="flex items-center justify-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          <div className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-500" /> SSL SECURE</div>
+          <div className="flex items-center gap-1.5 font-bold"><CheckCircle2 size={12} className="text-green-500" /> SSL SECURE</div>
           <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-          <div className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-500" /> GDPR READY</div>
+          <div className="flex items-center gap-1.5 font-bold"><CheckCircle2 size={12} className="text-green-500" /> 256-BIT ENCRYPTION</div>
         </div>
       </div>
     </div>
