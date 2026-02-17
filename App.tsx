@@ -1,15 +1,13 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import LandingPage from './components/LandingPage';
-import UseCasesPage from './components/UseCasesPage';
 import Dashboard from './components/Dashboard';
 import Sidebar from './components/Sidebar';
 import WebsiteScanner from './components/WebsiteScanner';
 import CampaignBuilder from './components/CampaignBuilder';
 import ClickFraudProtection from './components/ClickFraudProtection';
 import AdAccountConnector from './components/AdAccountConnector';
-import AdminDashboard from './components/AdminDashboard';
 import AdminLibrary from './components/AdminLibrary';
 import AuthPage from './components/AuthPage';
 import MyProjects from './components/MyProjects';
@@ -21,131 +19,92 @@ const MOCK_ADMIN_ID = '00000000-0000-0000-0000-000000000000';
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
-  const [insights, setInsights] = useState<AIInsight[]>([]);
+  const [insights] = useState<AIInsight[]>([]);
 
-  // Theme Logic
   useEffect(() => {
     if (isDarkMode) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [isDarkMode]);
 
-  const toggleTheme = () => {
-    const newTheme = !isDarkMode ? 'dark' : 'light';
-    setIsDarkMode(!isDarkMode);
-    localStorage.setItem('theme', newTheme);
-  };
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-  /**
-   * DATA PROVISIONING ENGINE
-   * Ensures every session has at least one valid workspace.
-   */
-  const bootstrapAppData = useCallback(async (userId: string, userEmail: string) => {
-    const isAdmin = userEmail === 'admin@zieads.com';
+  const provisionSessionData = useCallback(async (userId: string, email: string) => {
+    const isAdmin = email === 'admin@zieads.com';
+
+    if (isAdmin) {
+      const adminWs: Workspace = {
+        id: 'zieads-root-master',
+        name: 'ZieAds Command',
+        owner_id: userId,
+        plan_type: 'Scale',
+        created_at: new Date().toISOString()
+      };
+      setWorkspaces([adminWs]);
+      setActiveWorkspaceId(adminWs.id);
+      return adminWs;
+    }
 
     try {
-      if (isAdmin) {
-        // 1. ADMIN FAST-PATH (No DB calls)
-        const adminWs: Workspace = {
-          id: 'admin-master-node',
-          name: 'ZieAds Master Command',
-          owner_id: userId,
-          plan_type: 'scale',
-          created_at: new Date().toISOString()
-        };
-        setWorkspaces([adminWs]);
-        setActiveWorkspaceId(adminWs.id);
-        setInsights([{
-          id: 'ins-admin-1',
-          workspace_id: adminWs.id,
-          entity_type: 'automation',
-          entity_id: 'global',
-          insight_type: 'budget_imbalance',
-          severity: 'info',
-          message: 'System Integrity: All neural nodes are operating at peak efficiency.',
-          resolved: false,
-          created_at: new Date().toISOString()
-        }]);
-        return;
-      }
-
-      // 2. STANDARD USER PATH
-      const { data: wsData, error: wsError } = await supabase
+      const { data: wsData } = await supabase
         .from('workspaces')
         .select('*')
         .eq('owner_id', userId);
 
-      if (!wsError && wsData && wsData.length > 0) {
+      if (wsData && wsData.length > 0) {
         setWorkspaces(wsData);
         setActiveWorkspaceId(wsData[0].id);
+        return wsData[0];
       } else {
-        // Try creating a default workspace
-        const { data: newWs, error: createError } = await supabase
-          .from('workspaces')
-          .insert([{ name: 'My Business Workspace', owner_id: userId, plan_type: 'free' }])
-          .select()
-          .single();
-        
-        if (createError || !newWs) throw new Error("DB Initialization Failed");
-
-        setWorkspaces([newWs]);
-        setActiveWorkspaceId(newWs.id);
+        const fallbackWs: Workspace = {
+          id: 'ws-' + userId.substring(0, 8),
+          name: 'My Workspace',
+          owner_id: userId,
+          plan_type: 'Starter',
+          created_at: new Date().toISOString()
+        };
+        setWorkspaces([fallbackWs]);
+        setActiveWorkspaceId(fallbackWs.id);
+        return fallbackWs;
       }
     } catch (err) {
-      console.warn("Resilience Mode: Booting with virtual workspace data.");
-      const virtualWs: Workspace = {
-        id: 'virtual-node-' + userId.substring(0, 8),
-        name: 'Personal Workspace',
-        owner_id: userId,
-        plan_type: 'starter',
-        created_at: new Date().toISOString()
-      };
-      setWorkspaces([virtualWs]);
-      setActiveWorkspaceId(virtualWs.id);
+      console.error("Workspace recovery fail:", err);
+      return null;
     }
   }, []);
 
-  /**
-   * AUTH ORCHESTRATOR
-   */
   useEffect(() => {
-    const checkAuth = async () => {
-      setLoading(true);
+    const boot = async () => {
       try {
-        // 1. Check for Admin Bypass in Storage
-        const isAdminBypass = localStorage.getItem('zieads_admin_bypass') === 'true';
-        if (isAdminBypass) {
-          const adminSession = { user: { id: MOCK_ADMIN_ID, email: 'admin@zieads.com' } };
-          setSession(adminSession);
-          await bootstrapAppData(MOCK_ADMIN_ID, 'admin@zieads.com');
-          setLoading(false);
-          return;
+        const bypass = localStorage.getItem('zieads_admin_bypass') === 'true';
+        if (bypass) {
+          const mockSess = { user: { id: MOCK_ADMIN_ID, email: 'admin@zieads.com' } };
+          setSession(mockSess);
+          await provisionSessionData(MOCK_ADMIN_ID, 'admin@zieads.com');
+        } else {
+          const { data: { session: sbSess } } = await supabase.auth.getSession();
+          if (sbSess?.user) {
+            setSession(sbSess);
+            await provisionSessionData(sbSess.user.id, sbSess.user.email || '');
+          }
         }
-
-        // 2. Standard Supabase Session
-        const { data: { session: sbSession } } = await supabase.auth.getSession();
-        if (sbSession?.user) {
-          setSession(sbSession);
-          await bootstrapAppData(sbSession.user.id, sbSession.user.email || '');
-        }
-      } catch (err) {
-        console.error("Auth Failure:", err);
+      } catch (e) {
+        console.error("Boot error:", e);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuth();
+    boot();
 
-    // Listen for Auth Changes (Supabase Only)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSess) => {
       if (localStorage.getItem('zieads_admin_bypass') === 'true') return;
-
-      if (newSession?.user) {
-        setSession(newSession);
-        await bootstrapAppData(newSession.user.id, newSession.user.email || '');
+      
+      if (newSess?.user) {
+        setSession(newSess);
+        await provisionSessionData(newSess.user.id, newSess.user.email || '');
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
         setWorkspaces([]);
@@ -154,30 +113,26 @@ const App: React.FC = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [bootstrapAppData]);
+  }, [provisionSessionData]);
 
-  const activeWorkspace = useMemo(() => 
-    workspaces.find(w => w.id === activeWorkspaceId) || null, 
-  [workspaces, activeWorkspaceId]);
+  const activeWorkspace = useMemo(() => {
+    if (workspaces.length === 0) return null;
+    return workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
+  }, [workspaces, activeWorkspaceId]);
 
   const handleLogout = async () => {
     localStorage.removeItem('zieads_admin_bypass');
     await supabase.auth.signOut();
     setSession(null);
-    setWorkspaces([]);
-    setActiveWorkspaceId(null);
     window.location.hash = '#/';
   };
 
   if (loading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-slate-950">
-        <div className="flex flex-col items-center gap-6 animate-pulse">
-           <div className="w-16 h-16 tosca-bg rounded-3xl animate-spin shadow-2xl shadow-teal-500/20"></div>
-           <div className="text-center space-y-1">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] font-sans">ZieAds Network</p>
-             <p className="text-[9px] font-bold text-teal-500 uppercase tracking-widest">Establishing Secure Command...</p>
-           </div>
+      <div className="h-screen w-full flex items-center justify-center bg-[#0B0D10]">
+        <div className="flex flex-col items-center gap-6">
+           <Loader2 className="animate-spin text-[#7C5CFF]" size={32} />
+           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.4em]">ZieAds Intelligence</p>
         </div>
       </div>
     );
@@ -187,13 +142,12 @@ const App: React.FC = () => {
     <Router>
       {!session ? (
         <Routes>
-          <Route path="/" element={<LandingPage onLogin={() => (window.location.href = '#/auth')} />} />
-          <Route path="/auth" element={<AuthPage onBack={() => (window.location.href = '#/')} />} />
-          <Route path="/use-cases" element={<UseCasesPage />} />
+          <Route path="/" element={<LandingPage onLogin={() => (window.location.hash = '#/auth')} />} />
+          <Route path="/auth" element={<AuthPage onBack={() => (window.location.hash = '#/')} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       ) : (
-        <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
+        <div className="flex h-screen overflow-hidden bg-[#0B0D10] text-white">
           <Sidebar 
             onLogout={handleLogout} 
             activeWorkspace={activeWorkspace} 
@@ -202,19 +156,24 @@ const App: React.FC = () => {
             userEmail={session.user?.email}
             insights={insights}
           />
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
-            <Routes>
-              <Route path="/" element={<Dashboard activeWorkspace={activeWorkspace} toggleTheme={toggleTheme} isDarkMode={isDarkMode} insights={insights} />} />
-              <Route path="/campaigns/*" element={<MyProjects activeBusiness={null} />} />
-              <Route path="/creatives/generate" element={<CampaignBuilder brandProfile={null} onComplete={() => {}} />} />
-              <Route path="/creatives/library" element={<AdminLibrary />} />
-              <Route path="/automation" element={<ClickFraudProtection />} />
-              <Route path="/insights" element={<Dashboard activeWorkspace={activeWorkspace} toggleTheme={toggleTheme} isDarkMode={isDarkMode} insights={insights} />} />
-              <Route path="/integrations" element={<AdAccountConnector />} />
-              <Route path="/settings/*" element={<AdAccountConnector />} />
-              <Route path="/scanner" element={<WebsiteScanner activeBusiness={null} onScanComplete={() => {}} currentProfile={null} />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+            {!activeWorkspace ? (
+              <div className="h-full flex items-center justify-center">
+                 <Loader2 size={32} className="animate-spin text-[#7C5CFF]" />
+              </div>
+            ) : (
+              <Routes>
+                <Route path="/" element={<Dashboard activeWorkspace={activeWorkspace} toggleTheme={toggleTheme} isDarkMode={isDarkMode} insights={insights} />} />
+                <Route path="/campaigns/*" element={<MyProjects activeBusiness={null} />} />
+                <Route path="/creatives/*" element={<AdminLibrary />} />
+                <Route path="/automation" element={<ClickFraudProtection />} />
+                <Route path="/insights" element={<Dashboard activeWorkspace={activeWorkspace} toggleTheme={toggleTheme} isDarkMode={isDarkMode} insights={insights} />} />
+                <Route path="/integrations" element={<AdAccountConnector />} />
+                <Route path="/settings/*" element={<AdAccountConnector />} />
+                <Route path="/scanner" element={<WebsiteScanner activeBusiness={null} onScanComplete={() => {}} currentProfile={null} />} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            )}
           </main>
         </div>
       )}

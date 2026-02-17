@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { BrandProfile, AdCreative, Platform, CampaignObjective, Recommendation, BrandDNA } from "../types";
 
@@ -68,10 +67,9 @@ export const scanWebsite = async (url: string, logoBase64?: string): Promise<Bra
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: { parts },
       config: {
-        thinkingConfig: { thinkingBudget: 16384 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -107,7 +105,7 @@ export const scanWebsite = async (url: string, logoBase64?: string): Promise<Bra
       summary: data.summary,
       description: data.summary,
       tone: data.tone,
-      primaryColor: data.primary_color || '#14B8A6',
+      primaryColor: data.primary_color || '#7C5CFF',
       secondaryColor: data.secondary_color || '#1E293B',
       colors: [data.primary_color, data.secondary_color],
       products: data.products,
@@ -131,28 +129,18 @@ export const generateHybridAdCreative = async (
   try {
     const ai = getAi();
     const prompt = `
-      Project: ZieAds AI Ad Poster Generator & Editor (Hybrid AI-Canvas)
-      Role: Creative Director AI specializing in layout composition and visual consistency.
-      
-      Input Context:
-      - Brand: ${brandProfile.name}
-      - Tone: ${brandProfile.tone}
-      - Colors: ${brandProfile.colors?.join(', ') || brandProfile.primaryColor}
-      - Product: ${productName}
-      - Core Benefit: ${coreBenefit}
-      - Platform: ${platform}
-      
-      Instructions:
-      1. Analyze Brand DNA: ${brandProfile.dna?.narrative} | ${brandProfile.dna?.visuals}.
-      2. Style Transfer: Match the 'Sas Venture' aesthetic (modern, minimalist, tech-focused, cinematic lighting).
-      3. AI Layer: Create a background prompt focusing on abstract shapes, professional lighting, and a clean product placement area.
-      4. Canvas Layers: Define NON-OVERLAPPING coordinates (x, y) for headline, sub-headline, and CTA.
-      
-      Return 3 high-converting variations.
+      Project: ZieAds AI Ad Poster Generator
+      Brand: ${brandProfile.name}
+      Tone: ${brandProfile.tone}
+      Colors: ${brandProfile.colors?.join(', ') || brandProfile.primaryColor}
+      Product: ${productName}
+      Benefit: ${coreBenefit}
+      Platform: ${platform}
+      Return 3 high-converting variations in JSON format.
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -164,8 +152,8 @@ export const generateHybridAdCreative = async (
               ai_layer: {
                 type: Type.OBJECT,
                 properties: {
-                  nano_banana_prompt: { type: Type.STRING, description: "Detailed background art prompt focusing on lighting and textures" },
-                  negative_prompt: { type: Type.STRING, description: "Should include: text, letters, messy fonts" }
+                  nano_banana_prompt: { type: Type.STRING },
+                  negative_prompt: { type: Type.STRING }
                 },
                 required: ["nano_banana_prompt", "negative_prompt"]
               },
@@ -190,11 +178,7 @@ export const generateHybridAdCreative = async (
                       properties: {
                         font: { type: Type.STRING },
                         size: { type: Type.STRING },
-                        color: { type: Type.STRING },
-                        align: { type: Type.STRING },
-                        bg_color: { type: Type.STRING },
-                        text_color: { type: Type.STRING },
-                        border_radius: { type: Type.STRING }
+                        color: { type: Type.STRING }
                       }
                     }
                   },
@@ -222,21 +206,17 @@ export const generateImageForAd = async (prompt: string, brandName?: string): Pr
   try {
     const ai = getAi();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-2.5-flash-image',
       contents: {
         parts: [
           {
-            text: `Professional ad background in 'Sas Venture' minimalist aesthetic. 
-            NO TEXT, NO LETTERS, NO WORDS.
-            Focus: ${prompt}.
-            Negative: text, words, letters, blurry fonts, messy layout, distorted logos.`,
+            text: `High-end professional ad background, minimalist aesthetic. NO TEXT. Focus: ${prompt}.`,
           },
         ],
       },
       config: {
         imageConfig: {
-          aspectRatio: "1:1",
-          imageSize: "1K"
+          aspectRatio: "1:1"
         }
       },
     });
@@ -249,7 +229,7 @@ export const generateImageForAd = async (prompt: string, brandName?: string): Pr
         }
       }
     }
-    throw new Error("No image data returned from Nano Banana Pro");
+    throw new Error("No image data returned.");
   } catch (error) {
     console.error("Image gen error:", error);
     return "https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&q=80&w=800";
@@ -260,15 +240,10 @@ export const getRecommendations = async (campaigns: any[]): Promise<Recommendati
   if (campaigns.length === 0) return [];
   try {
     const ai = getAi();
-    const prompt = `Analyze these marketing campaigns and provide 3 optimization recommendations. 
-      Campaigns: ${JSON.stringify(campaigns)}.
-      Focus on Budget redistribution and Creative rotation.`;
-    
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: prompt,
+      model: 'gemini-3-flash-preview',
+      contents: `Recommend 3 optimizations for: ${JSON.stringify(campaigns)}`,
       config: {
-        thinkingConfig: { thinkingBudget: 8192 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -286,12 +261,8 @@ export const getRecommendations = async (campaigns: any[]): Promise<Recommendati
         },
       },
     });
-
-    const text = response.text?.trim();
-    if (!text) return [];
-    return JSON.parse(text);
+    return JSON.parse(response.text || '[]');
   } catch (error) {
-    console.error("Error in getRecommendations:", error);
     return [];
   }
 };
@@ -303,27 +274,9 @@ export const generateDynamicAdTemplateLogic = async (
 ): Promise<AdTemplateLogic> => {
   try {
     const ai = getAi();
-    const prompt = `
-      Task: Generate a high-fidelity dynamic ad template design system for marketing.
-      Product Name: ${productName}
-      Aesthetic Style: ${style}
-      Brand Colors to incorporate: ${colors.join(', ')}
-      
-      Generate a JSON object containing:
-      1. ai_image_prompt: A very detailed text-to-image prompt for the background layer. Focus on textures, lighting, and mood. Ensure NO TEXT is requested in the image.
-      2. canvas_layers: An array of text-based design elements. 
-         Each element must have:
-         - id: (e.g., "headline", "tagline", "cta")
-         - pos: [x, y] coordinates where 0 is left/top and 1000 is right/bottom.
-         - text: The copy for that element.
-         - fontSize: A size value on the same 0-100 scale (0-1000 range).
-         - color: Hex color code.
-         - font: Font family name.
-    `;
-
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: prompt,
+      model: 'gemini-3-flash-preview',
+      contents: `Generate ad template logic for: ${productName}, Style: ${style}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -336,10 +289,7 @@ export const generateDynamicAdTemplateLogic = async (
                 type: Type.OBJECT,
                 properties: {
                   id: { type: Type.STRING },
-                  pos: {
-                    type: Type.ARRAY,
-                    items: { type: Type.NUMBER }
-                  },
+                  pos: { type: Type.ARRAY, items: { type: Type.NUMBER } },
                   text: { type: Type.STRING },
                   fontSize: { type: Type.NUMBER },
                   color: { type: Type.STRING },
@@ -353,12 +303,8 @@ export const generateDynamicAdTemplateLogic = async (
         }
       }
     });
-
-    const text = response.text?.trim();
-    if (!text) throw new Error("AI failed to return ad template logic.");
-    return JSON.parse(text);
+    return JSON.parse(response.text || '{}');
   } catch (error) {
-    console.error("Error in generateDynamicAdTemplateLogic:", error);
     throw error;
   }
 };

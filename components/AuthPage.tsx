@@ -34,18 +34,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
 
     const cleanEmail = email.trim().toLowerCase();
     
-    // 1. ADMIN BYPASS LOGIC
+    // 1. ADMIN OVERRIDE (Hardcoded for Developer Access)
     if (cleanEmail === 'admin@zieads.com' && password === 'asikasikjos14') {
       try {
         localStorage.setItem('zieads_admin_bypass', 'true');
-        // Clear real session if any exists
+        // Ensure standard Supabase session is gone to avoid interference
         await supabase.auth.signOut();
-        // Force complete reload to trigger App.tsx orchestrator
+        // Redirect to root and reload to trigger bypass logic in App.tsx
         window.location.hash = '#/';
         window.location.reload();
         return;
       } catch (err) {
-        setError('Storage Error: Unable to initialize secure command.');
+        setError('Device block: Storage is disabled or private.');
         setLoading(false);
         return;
       }
@@ -60,17 +60,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
         });
         if (signInError) throw signInError;
         window.location.hash = '#/';
+        window.location.reload();
       } else {
         const { error: signUpError } = await supabase.auth.signUp({ 
           email: cleanEmail, 
           password 
         });
         if (signUpError) throw signUpError;
-        alert('Check your inbox for a verification link!');
+        alert('Security verification sent to your email.');
         setIsLogin(true);
       }
     } catch (err: any) {
-      setError(err.message || 'Access Denied. Check your credentials.');
+      setError(err.message || 'System Access Denied.');
     } finally {
       setLoading(false);
     }
@@ -91,10 +92,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
           <img src={LOGO_URL} alt="ZieAds Logo" className="h-14 w-auto object-contain" />
           <div className="space-y-1">
             <h1 className="text-3xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-              {isLogin ? 'Command Access' : 'Create Identity'}
+              {isLogin ? 'Network Access' : 'Create Node'}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium">
-              {isLogin ? 'Login to your marketing command center' : 'Join the ZieAds autonomous network'}
+              {isLogin ? 'Sign in to access your command center' : 'Begin your journey with ZieAds'}
             </p>
           </div>
         </div>
@@ -110,7 +111,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
 
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-2">Email Identity</label>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-2">Identity Email</label>
                 <div className="relative group">
                   <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={20} />
                   <input
@@ -126,7 +127,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center ml-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Secret Key</label>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Access Key</label>
+                  {isLogin && <button type="button" className="text-[11px] font-black text-primary hover:underline">Reset</button>}
                 </div>
                 <div className="relative group">
                   <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={20} />
@@ -154,24 +156,24 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
               disabled={loading}
               className="w-full h-14 tosca-bg text-white font-black text-lg rounded-2xl shadow-xl shadow-teal-500/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="animate-spin" /> : <><span className="uppercase tracking-widest">{isLogin ? 'Enter Dashboard' : 'Initialize Account'}</span><ArrowRight size={20} /></>}
+              {loading ? <Loader2 className="animate-spin" /> : <><span className="uppercase tracking-widest">{isLogin ? 'Enter Dashboard' : 'Deploy Account'}</span><ArrowRight size={20} /></>}
             </button>
           </form>
         </div>
 
         <div className="text-center">
           <p className="text-slate-500 dark:text-slate-400 font-medium">
-            {isLogin ? "Need a workspace?" : "Already a member?"}{' '}
+            {isLogin ? "No account yet?" : "Have an account?"}{' '}
             <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-bold hover:underline transition-all">
-              {isLogin ? "Join now" : "Sign in"}
+              {isLogin ? "Join ZieAds" : "Sign in now"}
             </button>
           </p>
         </div>
 
         <div className="flex items-center justify-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          <div className="flex items-center gap-1.5 font-bold"><CheckCircle2 size={12} className="text-green-500" /> SSL SECURE</div>
+          <div className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-500" /> AES-256 SECURE</div>
           <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-          <div className="flex items-center gap-1.5 font-bold"><CheckCircle2 size={12} className="text-green-500" /> 256-BIT ENCRYPTION</div>
+          <div className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-500" /> SSL ENCRYPTED</div>
         </div>
       </div>
     </div>
