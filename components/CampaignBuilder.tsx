@@ -12,9 +12,10 @@ import { useNavigate } from 'react-router-dom';
 interface CampaignBuilderProps {
   brandProfile: BrandProfile | null;
   onComplete: (campaign: Campaign) => void;
+  workspaceId: string;
 }
 
-const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onComplete }) => {
+const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onComplete, workspaceId }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Ad Content Inputs, 2: Hybrid Workspace
@@ -51,6 +52,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
     setLoading(true);
     try {
       const activeProfile: BrandProfile = brandProfile || {
+        workspace_id: workspaceId,
         name: projectName,
         summary: coreBenefit,
         description: coreBenefit,
@@ -69,9 +71,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
 
       const hybridPlans = await generateHybridAdCreative(activeProfile, platform, productName, coreBenefit);
       
-      // Generate the first one immediately to keep the 2-minute promise
       const plansWithImages = await Promise.all(hybridPlans.map(async (p, idx) => {
-        // If it's the first one, we wait. If others, we could lazy load, but for now we do all.
         const imageUrl = await generateImageForAd(p.ai_layer.nano_banana_prompt, activeProfile.name);
         return { ...p, imageUrl, selected: true, approved: false };
       }));
@@ -122,12 +122,11 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
     
     setLoading(true);
     try {
-      const businessId = (brandProfile as any)?.business_id || 'manual_entry';
       const campaignToPublish = {
-        business_id: businessId,
+        workspace_id: workspaceId,
         name: projectName,
         type: CampaignType.SmartMulti,
-        platforms: [Platform.Meta], // simplified for now
+        platforms: [Platform.Meta],
         objective,
         audience: audienceDesc,
         budget: 50,
@@ -153,7 +152,7 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
 
       const published = await orchestrateCampaignPublish(campaignToPublish, flattenedCreatives);
       onComplete(published as any);
-      navigate('/projects');
+      navigate('/campaigns');
     } catch (e: any) {
       alert("Deployment failed: " + (e.message || "Unknown error"));
     } finally {
@@ -281,11 +280,6 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                   </div>
                </div>
             </div>
-            
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 space-y-2">
-               <p className="text-[10px] font-black text-primary uppercase tracking-widest">AI Status</p>
-               <p className="text-xs font-medium text-slate-500 leading-relaxed italic">Engine analyzing performance velocity of current candidates.</p>
-            </div>
           </div>
         </div>
 
@@ -302,9 +296,6 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                 className="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 font-bold text-xs hover:bg-slate-50"
                >
                  Back
-               </button>
-               <button className="flex items-center gap-2 px-6 py-2.5 tosca-bg/10 border border-primary/20 rounded-xl text-primary font-bold text-xs hover:bg-primary/20 transition-all">
-                 <Sparkles size={16} /> DNA Refine
                </button>
              </div>
           </div>
@@ -324,14 +315,12 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
           </div>
 
           <div className="bg-slate-900 rounded-[40px] p-10 text-white relative overflow-hidden group shadow-2xl shadow-slate-950/20">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 blur-[100px] rounded-full group-hover:scale-125 transition-transform duration-1000"></div>
              <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                 <div className="space-y-4 max-w-lg">
                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-teal-500/10 text-teal-400 rounded-full border border-teal-500/20 text-[10px] font-black uppercase tracking-widest">Deployment Terminal</div>
                    <h3 className="text-3xl font-black font-display tracking-tight leading-none">Ready to scale?</h3>
                    <p className="text-slate-400 text-sm font-medium leading-relaxed">
-                      Approved hybrid posters are now primed for global orchestration across {platform}. 
-                      AI status: High Performance velocity predicted.
+                      Approved hybrid posters are now primed for global orchestration.
                    </p>
                 </div>
                 <button 
@@ -383,10 +372,7 @@ const AdPreviewCard: React.FC<AdPreviewCardProps> = ({ plan, index, brandName, o
                     <span className="text-[10px] text-white font-black uppercase tracking-widest animate-pulse">Re-Rendering...</span>
                   </div>
                 ) : null}
-                
                 <img src={plan.imageUrl} className="w-full h-full object-cover transition-all duration-1000 group-hover/image:scale-105" alt="AI Aesthetic Layer" />
-                
-                {/* Canvas Layers: Strictly following coordinate logic */}
                 <div className="absolute inset-0 pointer-events-none select-none z-[50]">
                    {plan.canvas_layers.map((layer: CanvasLayer) => (
                       <div 
@@ -430,8 +416,6 @@ const AdPreviewCard: React.FC<AdPreviewCardProps> = ({ plan, index, brandName, o
                       </div>
                    ))}
                 </div>
-
-                {/* Quick Editor Controls */}
                 <div className="absolute inset-0 flex items-center justify-center gap-6 opacity-0 group-hover/image:opacity-100 transition-all duration-500 z-[70] pointer-events-none">
                    <button 
                     onClick={(e) => { e.stopPropagation(); onRegenerate(); }}
@@ -446,18 +430,10 @@ const AdPreviewCard: React.FC<AdPreviewCardProps> = ({ plan, index, brandName, o
                    </button>
                 </div>
              </div>
-
              <div className="flex items-center justify-between px-2 pt-2">
                 <div className="flex flex-col">
                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Efficiency score</p>
                    <p className="text-xl font-black text-teal-500">{plan.predictedCTR}% CTR</p>
-                </div>
-                <div className="flex -space-x-3">
-                   {[1, 2, 3].map(i => (
-                     <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-[8px] font-black text-slate-500 overflow-hidden">
-                        <img src={`https://i.pravatar.cc/100?u=zieads-${i}`} alt="user" />
-                     </div>
-                   ))}
                 </div>
              </div>
           </div>

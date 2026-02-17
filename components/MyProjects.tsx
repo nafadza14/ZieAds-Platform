@@ -15,16 +15,16 @@ import {
   MousePointer2,
   TrendingUp
 } from 'lucide-react';
-import { Business, Campaign, Platform } from '../types';
+import { Workspace, Campaign, Platform } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 interface MyProjectsProps {
-  activeBusiness: Business | null;
+  activeWorkspace: Workspace | null;
 }
 
-const MyProjects: React.FC<MyProjectsProps> = ({ activeBusiness }) => {
+const MyProjects: React.FC<MyProjectsProps> = ({ activeWorkspace }) => {
   const navigate = useNavigate();
-  const campaigns = activeBusiness?.campaigns || [];
+  const campaigns = activeWorkspace?.campaigns || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans">
@@ -32,7 +32,7 @@ const MyProjects: React.FC<MyProjectsProps> = ({ activeBusiness }) => {
         <div>
           <h1 className="text-3xl font-semibold text-slate-900 dark:text-white tracking-tight leading-none mb-1 transition-colors">My projects</h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium text-sm transition-colors">
-            Managing <span className="font-bold text-primary">{campaigns.length}</span> active campaigns for {activeBusiness?.name}
+            Managing <span className="font-bold text-primary">{campaigns.length}</span> active campaigns for {activeWorkspace?.name}
           </p>
         </div>
         <div className="flex gap-3">
@@ -81,7 +81,7 @@ const MyProjects: React.FC<MyProjectsProps> = ({ activeBusiness }) => {
                     <div className="space-y-1">
                       <p className="font-bold text-slate-900 dark:text-white tracking-tight transition-colors">{c.name}</p>
                       <div className="flex gap-1.5">
-                        {c.platforms.map(p => (
+                        {c.platforms?.map(p => (
                           <span key={p} className="px-2 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-[10px] font-bold text-primary dark:text-teal-400 border border-teal-100 dark:border-teal-500/20">{p}</span>
                         ))}
                       </div>
@@ -92,7 +92,7 @@ const MyProjects: React.FC<MyProjectsProps> = ({ activeBusiness }) => {
                   </td>
                   <td className="px-8 py-6">
                     <div className="space-y-0.5">
-                      <p className="text-slate-900 dark:text-white font-bold tracking-tight">${c.budget.toLocaleString()}/day</p>
+                      <p className="text-slate-900 dark:text-white font-bold tracking-tight">${c.daily_budget.toLocaleString()}/day</p>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">Spend: ${c.metrics?.spend || 0}</p>
                     </div>
                   </td>

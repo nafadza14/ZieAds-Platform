@@ -35,6 +35,8 @@ export interface Workspace {
   owner_id: string;
   plan_type: string;
   created_at: string;
+  campaigns?: Campaign[];
+  brandProfile?: BrandProfile;
 }
 
 export interface WorkspaceMember {
@@ -61,7 +63,7 @@ export enum CampaignType {
 export interface Campaign {
   id: string;
   workspace_id: string;
-  integration_id: string;
+  integration_id?: string;
   external_id?: string;
   name: string;
   status: string;
@@ -71,7 +73,7 @@ export interface Campaign {
   ai_managed: boolean;
   created_at: string;
   metrics?: CampaignMetrics;
-  // Added fields for campaign publishing logic
+  // Publishing fields
   type?: CampaignType | string;
   budget?: number;
   duration?: number;
@@ -91,17 +93,35 @@ export interface CampaignMetrics {
   cpa: number;
 }
 
-export interface Creative {
-  id: string;
-  workspace_id: string;
-  type: string;
-  asset_path: string;
-  ai_generated: boolean;
-  fatigue_score: number;
-  performance_score: number;
-  created_at: string;
+export interface BrandDNA {
+  narrative: string;
+  audience: string;
+  visuals: string;
 }
 
+/**
+ * BrandProfile represents the identity of a business.
+ * workspace_id is made optional as profiles are often synthesized before workspace assignment.
+ */
+export interface BrandProfile {
+  workspace_id?: string;
+  name: string;
+  summary: string;
+  description: string;
+  tone: string;
+  primaryColor: string;
+  secondaryColor: string;
+  colors: string[];
+  products: string[];
+  audiences: string[];
+  url?: string;
+  logoUrl?: string;
+  dna?: BrandDNA;
+}
+
+/**
+ * AdCreative represents a generated advertisement asset.
+ */
 export interface AdCreative {
   platform: Platform;
   headline: string;
@@ -130,38 +150,9 @@ export enum CampaignObjective {
   Sales = 'Sales'
 }
 
-export interface BrandDNA {
-  narrative: string;
-  audience: string;
-  visuals: string;
-}
-
-// Legacy compatibility for components
-export interface BrandProfile {
-  name: string;
-  summary: string;
-  description: string;
-  tone: string;
-  primaryColor: string;
-  secondaryColor: string;
-  colors: string[];
-  products: string[];
-  audiences: string[];
-  url?: string;
-  logoUrl?: string;
-  dna?: BrandDNA;
-}
-
-export interface Business {
-  id: string;
-  name: string;
-  brandProfile: BrandProfile | null;
-  campaigns: Campaign[];
-}
-
 export interface ClickLog {
   id: string;
-  businessId: string;
+  workspace_id: string;
   ipAddress: string;
   userAgent: string;
   fingerprint: string;
@@ -171,7 +162,7 @@ export interface ClickLog {
 }
 
 export interface FraudSummary {
-  businessId: string;
+  workspace_id: string;
   totalScannedClicks: number;
   totalFraudBlocked: number;
   excludedIpsCount: number;

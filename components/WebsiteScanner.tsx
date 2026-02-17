@@ -23,17 +23,17 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { scanWebsite } from '../services/geminiService';
-import { updateBusinessBrandProfile } from '../services/dbService';
-import { BrandProfile, Business } from '../types';
+import { updateWorkspaceBrandProfile } from '../services/dbService';
+import { BrandProfile, Workspace } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 interface WebsiteScannerProps {
   onScanComplete: (profile: BrandProfile) => void;
   currentProfile: BrandProfile | null;
-  activeBusiness: Business | null;
+  activeWorkspace: Workspace | null;
 }
 
-const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, currentProfile, activeBusiness }) => {
+const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, currentProfile, activeWorkspace }) => {
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -82,6 +82,11 @@ const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, current
     
     try {
       const profile = await scanWebsite(url, logoPreview || undefined);
+      // Map to proper profile type
+      const finalProfile: BrandProfile = {
+        ...profile,
+        workspace_id: activeWorkspace?.id || 'temp',
+      };
       
       await new Promise(r => setTimeout(r, 800));
       setAnalysisStream(prev => ({ ...prev, assets: true }));
@@ -93,7 +98,7 @@ const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, current
       setAnalysisStream(prev => ({ ...prev, visuals: true }));
       await new Promise(r => setTimeout(r, 500));
 
-      setScannedProfile(profile);
+      setScannedProfile(finalProfile);
       setActiveStep(2);
     } catch (err) {
       console.error("Scan Error:", err);
@@ -106,17 +111,16 @@ const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, current
   };
 
   const handleCommitDNA = async () => {
-    if (!scannedProfile || !activeBusiness) return;
+    if (!scannedProfile || !activeWorkspace) return;
     
     setIsSaving(true);
     try {
-      await updateBusinessBrandProfile(activeBusiness.id, scannedProfile);
-      // Trigger update in parent App.tsx to ensure activeBusiness is updated globally
+      await updateWorkspaceBrandProfile(activeWorkspace.id, scannedProfile);
       onScanComplete(scannedProfile);
       return true;
     } catch (err) {
       console.error("Save failed:", err);
-      alert("System was unable to persist Brand DNA. Please verify your database connection.");
+      alert("System was unable to persist Brand DNA.");
       return false;
     } finally {
       setIsSaving(false);

@@ -7,13 +7,23 @@ import {
   Mail, 
   Lock, 
   AlertCircle, 
-  CheckCircle2,
-  ChevronLeft,
-  Eye,
-  EyeOff
+  Eye, 
+  EyeOff, 
+  ShieldCheck,
+  Layout,
+  Zap,
+  Sparkles,
+  Layers,
+  Globe,
+  CheckCircle2
 } from 'lucide-react';
 
-const LOGO_URL = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMjAgMTAwIj4KICA8dGV4dCB4PSI1IiB5PSI3NSIgZmlsbD0iIzE0QjhBNiIgZm9udC1mYW1pbHk9IlBsdXMgSmFrYXJ0YSBTYW5zLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iODAwIiBmb250LXNpemU9IjcwIj5aaWU8L3RleHQ+CiAgPHJlY3QgeD0iMTE1IiB5PSIxNSIgd2lkdGg9IjIwMCIgaGVpZ2h0PSI3NSIgZmlsbD0iIzE0QjhBNiIgLz4KICA8dGV4dCB4PSIxMjUiIHk4Ijc1IiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IlBsdXMgSmFrYXJ0YSBTYW5zLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iODAwIiBmb250LXNpemU9IjcwIj5BZHMuPC90ZXh0Pgo8L3N2Zz4=";
+const LOGO_MARK = (
+  <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="40" height="40" rx="10" fill="#7C5CFF"/>
+    <path d="M12 12H28L12 28H28" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 interface AuthPageProps {
   onBack: () => void;
@@ -34,18 +44,17 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
 
     const cleanEmail = email.trim().toLowerCase();
     
-    // 1. ADMIN OVERRIDE (Hardcoded for Developer Access)
+    // 1. ADMIN OVERRIDE
     if (cleanEmail === 'admin@zieads.com' && password === 'asikasikjos14') {
       try {
         localStorage.setItem('zieads_admin_bypass', 'true');
-        // Ensure standard Supabase session is gone to avoid interference
-        await supabase.auth.signOut();
-        // Redirect to root and reload to trigger bypass logic in App.tsx
+        // Force state update by triggering hash change
         window.location.hash = '#/';
-        window.location.reload();
+        // Small timeout to ensure storage is committed before state check in App.tsx
+        setTimeout(() => window.location.reload(), 100);
         return;
       } catch (err) {
-        setError('Device block: Storage is disabled or private.');
+        setError('Local storage access denied.');
         setLoading(false);
         return;
       }
@@ -60,82 +69,70 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
         });
         if (signInError) throw signInError;
         window.location.hash = '#/';
-        window.location.reload();
       } else {
         const { error: signUpError } = await supabase.auth.signUp({ 
           email: cleanEmail, 
           password 
         });
         if (signUpError) throw signUpError;
-        alert('Security verification sent to your email.');
+        alert('Verification link dispatched. Check your inbox.');
         setIsLogin(true);
       }
     } catch (err: any) {
-      setError(err.message || 'System Access Denied.');
+      setError(err.message || 'Invalid credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFF] dark:bg-slate-950 flex flex-col items-center justify-center p-6 font-sans transition-colors">
-      <button 
-        onClick={onBack}
-        className="fixed top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-sm uppercase tracking-widest transition-all group"
-      >
-        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-        Back
-      </button>
+    <div className="min-h-screen bg-white flex flex-col md:flex-row font-sans selection:bg-accent/10">
+      
+      {/* Left Column: Form Section */}
+      <div className="w-full md:w-[45%] flex flex-col p-8 md:p-16 lg:p-24 relative bg-white">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all mb-12 self-start"
+        >
+          {LOGO_MARK}
+          <span className="font-display font-bold text-lg text-slate-900">ZieAds</span>
+        </button>
 
-      <div className="w-full max-w-[440px] space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex flex-col items-center text-center space-y-4">
-          <img src={LOGO_URL} alt="ZieAds Logo" className="h-14 w-auto object-contain" />
-          <div className="space-y-1">
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-              {isLogin ? 'Network Access' : 'Create Node'}
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium">
-              {isLogin ? 'Sign in to access your command center' : 'Begin your journey with ZieAds'}
-            </p>
+        <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight font-display">Welcome</h1>
+            <p className="text-slate-500 font-medium">Log in to ZieAds Command</p>
           </div>
-        </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 md:p-10 shadow-2xl border border-slate-100 dark:border-slate-800 transition-colors">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl flex gap-3 text-red-600 dark:text-red-400 text-sm">
-                <AlertCircle size={20} className="shrink-0" />
-                <p className="font-bold">{error}</p>
+              <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex gap-3 text-red-600 text-xs animate-in shake duration-300">
+                <AlertCircle size={16} className="shrink-0" />
+                <p className="font-semibold">{error}</p>
               </div>
             )}
 
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-2">Identity Email</label>
-                <div className="relative group">
-                  <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={20} />
+            <div className="space-y-4">
+              <div className="space-y-1.5 relative group">
+                <label className="text-[11px] font-bold text-accent font-sans uppercase tracking-wider ml-1">Email address *</label>
+                <div className="relative">
                   <input
                     type="email"
-                    placeholder="name@company.com"
-                    className="w-full h-14 pl-14 pr-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:bg-white dark:focus:bg-slate-950 focus:border-primary outline-none font-bold text-slate-900 dark:text-white transition-all"
+                    className="w-full h-14 px-4 rounded-xl border border-slate-200 bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 outline-none font-medium text-slate-900 transition-all placeholder:text-slate-300"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
+                  <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center ml-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Access Key</label>
-                  {isLogin && <button type="button" className="text-[11px] font-black text-primary hover:underline">Reset</button>}
-                </div>
-                <div className="relative group">
-                  <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={20} />
+              <div className="space-y-1.5 relative group">
+                <label className="text-[11px] font-bold text-slate-500 font-sans uppercase tracking-wider ml-1">Password *</label>
+                <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    className="w-full h-14 pl-14 pr-12 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 focus:bg-white dark:focus:bg-slate-950 focus:border-primary outline-none font-bold text-slate-900 dark:text-white transition-all"
+                    className="w-full h-14 px-4 rounded-xl border border-slate-200 bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 outline-none font-medium text-slate-900 transition-all placeholder:text-slate-300"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -143,7 +140,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -151,33 +148,110 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
               </div>
             </div>
 
+            <button className="text-accent text-[13px] font-bold hover:underline transition-all">Forgot password?</button>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-14 tosca-bg text-white font-black text-lg rounded-2xl shadow-xl shadow-teal-500/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+              className="w-full h-14 bg-[#4A268A] text-white font-bold rounded-xl shadow-xl hover:bg-[#3D1F72] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="animate-spin" /> : <><span className="uppercase tracking-widest">{isLogin ? 'Enter Dashboard' : 'Deploy Account'}</span><ArrowRight size={20} /></>}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : 'Continue'}
             </button>
           </form>
-        </div>
 
-        <div className="text-center">
-          <p className="text-slate-500 dark:text-slate-400 font-medium">
-            {isLogin ? "No account yet?" : "Have an account?"}{' '}
-            <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-bold hover:underline transition-all">
-              {isLogin ? "Join ZieAds" : "Sign in now"}
-            </button>
-          </p>
-        </div>
-
-        <div className="flex items-center justify-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          <div className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-500" /> AES-256 SECURE</div>
-          <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-          <div className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-500" /> SSL ENCRYPTED</div>
+          <div className="pt-4 text-center">
+             <p className="text-slate-400 text-xs font-medium">
+               By continuing, you agree to ZieAds's <a href="#" className="text-accent hover:underline">Terms of Service</a> and <a href="#" className="text-accent hover:underline">Privacy Policy</a>.
+             </p>
+          </div>
         </div>
       </div>
+
+      {/* Right Column: Visual Section */}
+      <div className="hidden md:flex md:w-[55%] bg-[#F3E8FF] relative overflow-hidden flex-col justify-center p-16 lg:p-24">
+        {/* Mock UI Elements Decoration */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+           <div className="absolute top-20 right-10 w-[400px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 animate-float">
+              <div className="flex items-center justify-between mb-4">
+                 <div className="flex items-center gap-2">
+                    <Zap className="text-accent" size={16} />
+                    <span className="text-xs font-bold text-slate-900">Automation</span>
+                 </div>
+                 <div className="w-8 h-4 bg-accent/20 rounded-full relative"><div className="absolute right-0.5 top-0.5 w-3 h-3 bg-accent rounded-full"></div></div>
+              </div>
+              <div className="space-y-3">
+                 <div className="h-2 bg-slate-100 rounded w-full"></div>
+                 <div className="h-2 bg-slate-100 rounded w-2/3"></div>
+              </div>
+           </div>
+
+           <div className="absolute bottom-20 left-10 w-[300px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 animate-float-delayed">
+              <div className="flex items-center gap-2 mb-4">
+                 <Layers className="text-teal-500" size={16} />
+                 <span className="text-xs font-bold text-slate-900">Cross-channel</span>
+              </div>
+              <div className="flex gap-2">
+                 {[1,2,3,4].map(i => <div key={i} className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100"></div>)}
+              </div>
+           </div>
+
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] opacity-10">
+              <Globe size={500} className="text-accent" />
+           </div>
+        </div>
+
+        <div className="relative z-10 space-y-12">
+           <h2 className="text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] font-display">
+             Transforming the <br/>
+             <span className="text-accent">advertising experience</span>
+           </h2>
+
+           <div className="space-y-10 max-w-xl">
+              <FeatureItem 
+                icon={<Layout className="text-accent" />} 
+                title="Scale seamlessly across platforms" 
+                desc="Launch and manage campaigns on Facebook, Instagram, TikTok, and more—all from a single, unified dashboard." 
+              />
+              <FeatureItem 
+                icon={<Sparkles className="text-accent" />} 
+                title="Elevate creative performance" 
+                desc="Build data-driven, on-brand ads in minutes with dynamic templates, real-time previews, and automated creative updates." 
+              />
+              <FeatureItem 
+                icon={<CheckCircle2 className="text-accent" />} 
+                title="Collaborate effortlessly" 
+                desc="Streamline team workflows with flexible permissions, built-in approvals, and shared asset libraries—no more juggling tools." 
+              />
+           </div>
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-float-delayed { animation: float-delayed 7s ease-in-out infinite; animation-delay: 1s; }
+      `}</style>
     </div>
   );
 };
+
+const FeatureItem = ({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) => (
+  <div className="flex gap-6 items-start animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="w-12 h-12 shrink-0 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-accent/5">
+      {icon}
+    </div>
+    <div className="space-y-1">
+      <h3 className="text-lg font-bold text-slate-900 font-display">{title}</h3>
+      <p className="text-slate-600 font-medium text-[15px] leading-relaxed">{desc}</p>
+    </div>
+  </div>
+);
 
 export default AuthPage;
