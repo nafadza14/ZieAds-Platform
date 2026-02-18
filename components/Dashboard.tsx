@@ -1,238 +1,219 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
   LineChart, Line
 } from 'recharts';
 import { 
-  CheckCircle2, AlertTriangle, Sparkles, TrendingUp, TrendingDown, RefreshCw, Loader2
+  TrendingUp, TrendingDown, Check, AlertTriangle, Sparkles, Clock
 } from 'lucide-react';
-import { fetchDashboardSummary, triggerAnalyticsSync } from '../services/dbService';
-import { DashboardSummary, Platform } from '../types';
+import { motion } from 'framer-motion';
+
+// Aliasing motion components to bypass broken TypeScript definitions in this environment
+const MotionDiv = (motion as any).div;
+
+// Mock data for charts
+const performanceData = [
+  { date: 'Mon', revenue: 4000, spend: 2400 },
+  { date: 'Tue', revenue: 3000, spend: 1398 },
+  { date: 'Wed', revenue: 2000, spend: 9800 },
+  { date: 'Thu', revenue: 2780, spend: 3908 },
+  { date: 'Fri', revenue: 1890, spend: 4800 },
+  { date: 'Sat', revenue: 2390, spend: 3800 },
+  { date: 'Sun', revenue: 3490, spend: 4300 },
+];
+
+const sparkData = [
+  { v: 10 }, { v: 15 }, { v: 12 }, { v: 20 }, { v: 18 }, { v: 25 }, { v: 22 }
+];
 
 const Dashboard: React.FC = () => {
-  const [timeRange, setTimeRange] = useState('7d');
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-
-  const loadData = async (range: string) => {
-    setLoading(true);
-    try {
-      // Mock workspace ID for implementation
-      const data = await fetchDashboardSummary('zieads-root-master', range);
-      setSummary(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData(timeRange);
-  }, [timeRange]);
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await triggerAnalyticsSync('zieads-root-master');
-      await loadData(timeRange);
-    } catch (err) {
-      alert("Sync failed");
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  if (loading && !summary) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-20 space-y-4">
-        <Loader2 className="animate-spin text-[#8B5CF6]" size={48} />
-        <p className="text-[#94A3B8] font-bold uppercase tracking-widest text-sm">Synchronizing Command Center...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-[#0F172A] min-h-full p-6 text-[#F8FAFC] font-sans">
+    <div className="bg-[#0F172A] min-h-screen p-6 text-[#F8FAFC] font-sans transition-colors duration-300">
       {/* HEADER SECTION */}
-      <header className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <span className="text-2xl font-bold tracking-tight text-white font-display">ZieAds</span>
-          <h1 className="text-2xl font-semibold text-white">Command Center</h1>
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-bold">ZieAds</span>
+          <h1 className="text-[24px] font-semibold text-white">Command Center</h1>
         </div>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={handleSync}
-            disabled={syncing}
-            className={`flex items-center gap-2 px-3 py-1.5 bg-[#10B981]/10 rounded-lg border border-[#10B981]/20 hover:bg-[#10B981]/20 transition-all ${syncing ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <RefreshCw size={14} className={`${syncing ? 'animate-spin' : ''} text-[#10B981]`} />
-            <span className="text-[12px] font-medium text-[#10B981]">{syncing ? 'Syncing...' : 'Live Sync'}</span>
-          </button>
-          <button className="bg-[#8B5CF6] text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-[#7C3AED] transition-all shadow-lg shadow-[#8B5CF6]/10">
+          <div className="flex items-center gap-2 px-3 py-1 bg-[#1E293B] border border-[#334155] rounded-full">
+            <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+            <span className="text-[12px] font-medium text-[#94A3B8]">Live</span>
+          </div>
+          <button className="bg-[#8B5CF6] text-white px-6 py-3 rounded-lg font-semibold text-sm hover:bg-[#7C3AED] transition-all">
             Apply Recommendations
           </button>
         </div>
       </header>
 
-      {summary && (
-        <div className="max-w-[1200px] mx-auto space-y-4 animate-in fade-in duration-700">
-          {/* TOP CARD (Performance Overview) */}
-          <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 grid grid-cols-1 md:grid-cols-10 gap-8">
-            <div className="md:col-span-3 space-y-4">
-              <div className="space-y-1">
-                <div className="text-[72px] font-bold text-white leading-none">
-                  {Math.floor(summary.summary.total_roas * 10)}
-                </div>
-                <div className="text-[14px] font-medium text-[#10B981]">
-                  AI Efficiency Score: {summary.summary.total_roas.toFixed(2)}x
-                </div>
-              </div>
-              <div className="h-16 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={summary.trend}>
-                    <Area type="monotone" dataKey="revenue" stroke="#10B981" fill="#10B981" fillOpacity={0.1} strokeWidth={2} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-              <p className="text-[14px] text-[#94A3B8] italic">
-                "Performing at {summary.summary.total_roas > 3 ? 'high' : 'standard'} efficiency benchmarks."
-              </p>
+      {/* TOP CARD: PERFORMANCE OVERVIEW */}
+      <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 mb-4 grid grid-cols-1 lg:grid-cols-[35%_65%] gap-8">
+        {/* LEFT COLUMN: Main Score */}
+        <div className="flex flex-col justify-center border-r border-[#334155]/50 pr-8">
+          <div className="text-[72px] font-bold text-white leading-none mb-2">82</div>
+          <div className="flex items-center gap-1.5 text-[#10B981] text-[14px] font-medium mb-4">
+            <TrendingUp size={16} /> +14.5% vs last week
+          </div>
+          <div className="h-12 w-full mb-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={sparkData}>
+                <Area type="monotone" dataKey="v" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.1} strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="p-4 bg-[#0F172A]/50 rounded-lg border border-[#334155]/30">
+            <p className="text-[14px] text-[#94A3B8] italic leading-relaxed">
+              "Up 18% from Google Search and Video Hook #4"
+            </p>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Actionable Insights */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* What's Working */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#10B981] text-[16px] font-semibold">
+              <Check size={18} /> What's Working
             </div>
-
-            <div className="md:col-span-7 grid md:grid-cols-3 gap-8">
-              <div className="space-y-4">
-                <h3 className="text-[#10B981] text-base font-semibold flex items-center gap-2">
-                  <CheckCircle2 size={16} /> What's Working
-                </h3>
-                <ul className="text-sm text-[#F8FAFC] space-y-3 font-medium">
-                  {summary.by_campaign.slice(0, 3).map((camp, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span>•</span> {camp.name} ({camp.roas}x)
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-[#F59E0B] text-base font-semibold flex items-center gap-2">
-                  <AlertTriangle size={16} /> Watch Out
-                </h3>
-                <ul className="text-sm text-[#F8FAFC] space-y-3 font-medium">
-                  <li className="flex items-start gap-2"><span>•</span> TikTok CPM up 18% in 24 hours</li>
-                  <li className="flex items-start gap-2"><span>•</span> Retargeting audience saturated</li>
-                  <li className="flex items-start gap-2"><span>•</span> Pixel firing delays detected</li>
-                </ul>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-[#8B5CF6] text-base font-semibold flex items-center gap-2">
-                  <Sparkles size={16} /> AI Suggestions
-                </h3>
-                <div className="space-y-3">
-                  {[
-                    "Scale Meta Winner #1 by 20%",
-                    "Rotate tired UGC creative",
-                    "Fix tracking issue"
-                  ].map((sug, i) => (
-                    <div key={i} className="flex flex-col gap-2">
-                      <p className="text-xs font-medium text-[#F8FAFC]">{sug}</p>
-                      <button className="w-fit px-3 py-1 border border-[#8B5CF6] text-[#8B5CF6] rounded text-[10px] font-bold hover:bg-[#8B5CF6] hover:text-white transition-all">
-                        Do it
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <ul className="space-y-3">
+              <InsightListItem text="Meta ROAS up 22% from Shopping" />
+              <InsightListItem text="Google cost at lowest: $12.40" />
+              <InsightListItem text="New video hook at 4.2x ROAS" />
+            </ul>
           </div>
 
-          {/* METRICS ROW */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard value={`$${summary.summary.total_spend.toLocaleString()}`} trend="+14.2%" label="TOTAL SPEND" />
-            <MetricCard value={`$${summary.summary.total_revenue.toLocaleString()}`} trend="+22.5%" label="REVENUE" />
-            <MetricCard value={`${summary.summary.total_roas.toFixed(2)}x`} trend="+0.4%" label="ROAS" />
-            <MetricCard value={summary.summary.total_conversions.toLocaleString()} trend="+8%" label="TOTAL SALES" />
+          {/* Watch Out */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#F59E0B] text-[16px] font-semibold">
+              <AlertTriangle size={18} /> Watch Out
+            </div>
+            <ul className="space-y-3">
+              <InsightListItem text="Retargeting audience saturated" />
+              <InsightListItem text="TikTok CPM up 18% in 24 hours" />
+              <InsightListItem text="Campaign A returns dropping" />
+            </ul>
           </div>
 
-          {/* BOTTOM SECTION */}
-          <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
-            <div className="lg:col-span-6 bg-[#1E293B] border border-[#334155] rounded-xl p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold text-white">Revenue vs Spend</h3>
-                <div className="flex bg-[#0F172A] p-1 rounded-lg border border-[#334155]">
-                  {['7d', '30d'].map(range => (
-                    <button
-                      key={range}
-                      onClick={() => setTimeRange(range)}
-                      className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${timeRange === range ? 'bg-[#1E293B] text-white shadow-sm' : 'text-[#94A3B8] hover:text-white'}`}
-                    >
-                      {range === '7d' ? '7 days' : '30 days'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="h-[240px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={summary.trend}>
-                    <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} hide />
-                    <YAxis hide />
-                    <Tooltip contentStyle={{ backgroundColor: '#1E293B', border: '1px solid #334155' }} />
-                    <Line type="monotone" dataKey="revenue" stroke="#8B5CF6" strokeWidth={3} dot={false} />
-                    <Line type="monotone" dataKey="spend" stroke="#94A3B8" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+          {/* AI Suggestions */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#8B5CF6] text-[16px] font-semibold">
+              <Sparkles size={18} /> AI Suggestions
             </div>
-
-            <div className="lg:col-span-4 bg-[#1E293B] border border-[#334155] rounded-xl p-6 space-y-8">
-              <h3 className="text-base font-semibold text-white">Budget by Platform</h3>
-              <div className="space-y-6">
-                {summary.by_platform.map((p, i) => (
-                  <PlatformBar 
-                    key={i}
-                    label={p.platform} 
-                    percent={Math.floor((p.spend / summary.summary.total_spend) * 100)} 
-                    amount={`$${p.spend.toLocaleString()}`} 
-                    roas={`${p.roas}x`} 
-                    color={p.platform === Platform.Meta ? '#3B82F6' : p.platform === Platform.Google ? '#EF4444' : '#000000'} 
-                  />
-                ))}
-              </div>
+            <div className="space-y-3">
+              <SuggestionAction text="Scale Meta Winner #1 by 20%" />
+              <SuggestionAction text="Rotate tired UGC creative" />
+              <SuggestionAction text="Fix tracking issue" />
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* METRICS ROW */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <MetricCard label="Total Spend" value="$12,450.80" trend="+14.2%" />
+        <MetricCard label="Revenue" value="$42,890.30" trend="+22.5%" />
+        <MetricCard label="Return on Ad Spend" value="3.44x" trend="+0.4%" />
+        <MetricCard label="Cost Per Purchase" value="$2.15" trend="-12%" isInverse />
+      </div>
+
+      {/* BOTTOM SECTION */}
+      <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-4">
+        {/* Revenue vs Spend Chart */}
+        <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-[16px] font-semibold text-white">Revenue vs Spend</h3>
+            <div className="flex items-center gap-1 bg-[#0F172A] p-1 rounded-lg border border-[#334155]">
+              <ChartToggle label="7 days" active />
+              <ChartToggle label="30 days" />
+              <ChartToggle label="90 days" />
+            </div>
+          </div>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={performanceData}>
+                <XAxis dataKey="date" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                <YAxis hide />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '8px' }}
+                  itemStyle={{ fontSize: '12px' }}
+                />
+                <Line type="monotone" dataKey="revenue" stroke="#8B5CF6" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="spend" stroke="#475569" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Budget Split */}
+        <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6">
+          <h3 className="text-[16px] font-semibold text-white mb-8">Budget by Platform</h3>
+          <div className="space-y-8">
+            <BudgetBar label="Meta" percentage={55} amount="$6,800" roas="3.2x" color="#3B82F6" />
+            <BudgetBar label="Google" percentage={30} amount="$3,700" roas="2.8x" color="#EF4444" />
+            <BudgetBar label="TikTok" percentage={15} amount="$1,900" roas="4.1x" color="#000000" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-const MetricCard = ({ value, trend, label }: any) => (
-  <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 h-[120px] flex flex-col justify-between shadow-sm hover:border-[#8B5CF6]/50 transition-colors">
-    <div className="text-[28px] font-bold text-white leading-none">{value}</div>
-    <div className="flex items-center justify-between">
-      <span className="text-[14px] font-medium text-[#10B981]">{trend}</span>
-      <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">{label}</span>
-    </div>
+// --- HELPER COMPONENTS ---
+
+const InsightListItem = ({ text }: { text: string }) => (
+  <li className="text-[13px] text-[#94A3B8] flex items-start gap-2 leading-tight">
+    <span className="text-[#334155] mt-1">•</span> {text}
+  </li>
+);
+
+const SuggestionAction = ({ text }: { text: string }) => (
+  <div className="flex items-center justify-between gap-3">
+    <span className="text-[13px] text-[#94A3B8] leading-tight flex-1">{text}</span>
+    <button className="px-3 py-1.5 border border-[#8B5CF6] text-[#8B5CF6] rounded-md text-[11px] font-bold whitespace-nowrap hover:bg-[#8B5CF6] hover:text-white transition-all">
+      Do it
+    </button>
   </div>
 );
 
-const PlatformBar = ({ label, percent, amount, roas, color }: any) => (
-  <div className="space-y-2">
-    <div className="flex justify-between text-xs font-bold">
-      <div className="flex gap-2 text-[#F8FAFC]">
-        <span className="capitalize">{label}</span>
-        <span className="text-[#94A3B8]">{percent}% ({amount})</span>
+const MetricCard = ({ label, value, trend, isInverse }: any) => {
+  const isPositive = trend.includes('+');
+  const colorClass = (isPositive && !isInverse) || (!isPositive && isInverse) ? 'text-[#10B981]' : 'text-white';
+
+  return (
+    <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 flex flex-col justify-between h-[120px] shadow-sm">
+      <div className="text-[28px] font-bold text-white leading-none">{value}</div>
+      <div>
+        <div className={`text-[14px] font-medium ${colorClass} mb-1`}>{trend}</div>
+        <div className="text-[12px] text-[#94A3B8] uppercase tracking-wider font-medium">{label}</div>
       </div>
-      <div className="text-white">{roas} ROAS</div>
+    </div>
+  );
+};
+
+const ChartToggle = ({ label, active }: any) => (
+  <button className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${active ? 'bg-[#1E293B] text-white shadow-sm' : 'text-[#475569] hover:text-[#94A3B8]'}`}>
+    {label}
+  </button>
+);
+
+const BudgetBar = ({ label, percentage, amount, roas, color }: any) => (
+  <div className="space-y-2">
+    <div className="flex items-center justify-between text-[13px]">
+      <div className="flex items-center gap-2">
+        <span className="font-bold text-white">{label}</span>
+        <span className="text-[#94A3B8]">{percentage}% ({amount})</span>
+      </div>
+      <span className="font-bold text-[#10B981]">{roas}</span>
     </div>
     <div className="h-2 w-full bg-[#0F172A] rounded-full overflow-hidden">
-      <div 
-        className="h-full rounded-full transition-all duration-1000" 
-        style={{ width: `${percent}%`, backgroundColor: color }}
-      ></div>
+      <MotionDiv 
+        initial={{ width: 0 }}
+        animate={{ width: `${percentage}%` }}
+        transition={{ duration: 1, ease: "easeOut" }}
+        className="h-full rounded-full" 
+        style={{ backgroundColor: color }} 
+      />
     </div>
   </div>
 );

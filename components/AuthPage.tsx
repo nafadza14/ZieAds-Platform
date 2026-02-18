@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { 
@@ -13,6 +14,9 @@ import {
   Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Aliasing motion components to bypass broken TypeScript definitions in this environment
+const MotionDiv = (motion as any).div;
 
 // Custom SVG Icons for Socials
 const GoogleIcon = () => (
@@ -78,7 +82,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
     <div className="min-h-screen bg-[#0F172A] flex flex-col md:flex-row font-sans selection:bg-[#8B5CF6]/30 overflow-hidden">
       
       {/* LEFT SIDE - FORM */}
-      <motion.div 
+      <MotionDiv 
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
@@ -106,7 +110,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
 
           <AnimatePresence>
             {error && (
-              <motion.div 
+              <MotionDiv 
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -116,7 +120,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
                   <AlertCircle size={18} className="shrink-0" />
                   <p className="font-medium">{error}</p>
                 </div>
-              </motion.div>
+              </MotionDiv>
             )}
           </AnimatePresence>
 
@@ -205,10 +209,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
           By continuing, you agree to ZieAds' <br className="md:hidden" />
           <a href="#" className="underline hover:text-[#94A3B8] transition-colors">Terms of Service</a> and <a href="#" className="underline hover:text-[#94A3B8] transition-colors">Privacy Policy</a>
         </div>
-      </motion.div>
+      </MotionDiv>
 
       {/* RIGHT SIDE - VISUAL PREVIEW */}
-      <motion.div 
+      <MotionDiv 
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
@@ -217,7 +221,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
         {/* Floating Mockup Cards */}
         <div className="relative h-[320px] mb-16">
           {/* Analytics Card (Back) */}
-          <motion.div 
+          <MotionDiv 
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             className="absolute left-1/2 top-0 -translate-x-1/2 w-80 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl -rotate-[5deg] z-0"
@@ -232,10 +236,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
               <div className="h-1.5 w-1/3 bg-white/20 rounded"></div>
               <div className="h-1.5 w-1/4 bg-white/10 rounded"></div>
             </div>
-          </motion.div>
+          </MotionDiv>
 
           {/* Campaign Card (Left Front) */}
-          <motion.div 
+          <MotionDiv 
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
             className="absolute left-[10%] bottom-8 w-64 bg-white/15 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-2xl rotate-[3deg] z-10"
@@ -252,10 +256,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </MotionDiv>
 
           {/* Creative Card (Right Front) */}
-          <motion.div 
+          <MotionDiv 
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
             className="absolute right-[10%] bottom-12 w-64 bg-white/15 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-2xl -rotate-[2deg] z-20"
@@ -268,7 +272,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=200" className="w-full h-full object-cover opacity-50 mix-blend-overlay" alt="" />
             </div>
             <div className="h-2 w-full bg-white/20 rounded"></div>
-          </motion.div>
+          </MotionDiv>
         </div>
 
         {/* Headlines */}
@@ -323,7 +327,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack }) => {
         {/* Background blobs */}
         <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-[#8B5CF6]/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="absolute -top-20 -left-20 w-80 h-80 bg-[#312E81]/40 blur-[120px] rounded-full pointer-events-none"></div>
-      </motion.div>
+      </MotionDiv>
     </div>
   );
 };

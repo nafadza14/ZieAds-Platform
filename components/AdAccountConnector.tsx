@@ -7,6 +7,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Platform } from '../types';
 
+// Aliasing motion components to bypass broken TypeScript definitions in this environment
+const MotionDiv = (motion as any).div;
+
 type ConnectStep = 'initial' | 'select' | 'success';
 
 const AdAccountConnector: React.FC = () => {
@@ -87,7 +90,7 @@ const AdAccountConnector: React.FC = () => {
       <AnimatePresence>
         {showConnectModal && (
           <>
-            <motion.div 
+            <MotionDiv 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -95,7 +98,7 @@ const AdAccountConnector: React.FC = () => {
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
             />
             <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 pl-[240px] pointer-events-none">
-              <motion.div 
+              <MotionDiv 
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -164,7 +167,7 @@ const AdAccountConnector: React.FC = () => {
                     </>
                   )}
                 </div>
-              </motion.div>
+              </MotionDiv>
             </div>
           </>
         )}

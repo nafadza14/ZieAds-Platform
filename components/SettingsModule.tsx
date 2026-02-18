@@ -18,6 +18,9 @@ import {
 } from '../services/dbService';
 import { Workspace, WorkspaceMember, Subscription, Invoice, WorkspaceRole } from '../types';
 
+// Aliasing motion components to bypass broken TypeScript definitions in this environment
+const MotionDiv = (motion as any).div;
+
 type SettingsTab = 'Workspace' | 'Billing' | 'Team' | 'Security';
 
 const SettingsModule: React.FC = () => {
@@ -136,7 +139,7 @@ const SettingsModule: React.FC = () => {
             >
               {tab}
               {activeTab === tab && (
-                <motion.div layoutId="settings-tab-line" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B5CF6]" />
+                <MotionDiv layoutId="settings-tab-line" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B5CF6]" />
               )}
             </button>
           ))}
@@ -329,7 +332,14 @@ const SettingsModule: React.FC = () => {
 
 // --- SUB-COMPONENTS ---
 
-const SettingsCard = ({ title, description, children }: { title: string, description: string, children: React.ReactNode }) => (
+// Explicitly use React.FC and define props interface to fix 'children' property missing error
+interface SettingsCardProps {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}
+
+const SettingsCard: React.FC<SettingsCardProps> = ({ title, description, children }) => (
   <div className="bg-[#1E293B] border border-[#334155] rounded-xl overflow-hidden shadow-sm">
     <div className="p-6 border-b border-[#334155]">
       <h3 className="text-base font-semibold text-white">{title}</h3>

@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// @ts-ignore - Ignore missing member errors due to potential type resolution issues in this environment
+// @ts-ignore
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import LandingPage from './components/LandingPage';
@@ -83,7 +82,7 @@ const AppContent: React.FC<{
         onLogout={handleLogout} 
         userEmail={session.user?.email}
       />
-      <main className="flex-1 overflow-y-auto ml-[240px] custom-scrollbar transition-colors duration-300">
+      <main className="flex-1 overflow-y-auto ml-[240px] custom-scrollbar transition-colors duration-300 bg-[#0F172A]">
         {!activeWorkspace ? (
           <div className="h-full flex items-center justify-center">
              <Loader2 size={32} className="animate-spin text-[#8B5CF6]" />

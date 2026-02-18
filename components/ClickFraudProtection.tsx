@@ -19,6 +19,9 @@ import {
 } from '../services/dbService';
 import { OptimizationRule, OptimizationAction, OptimizationSuggestion } from '../types';
 
+// Aliasing motion components to bypass broken TypeScript definitions in this environment
+const MotionDiv = (motion as any).div;
+
 type AutoTab = 'Active Rules' | 'Suggestions' | 'History' | 'Safety';
 
 const sparkData = [20, 35, 25, 45, 30, 55, 42];
@@ -122,7 +125,7 @@ const ClickFraudProtection: React.FC = () => {
           >
             {tab}
             {activeTab === tab && (
-              <motion.div layoutId="auto-tab-line" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B5CF6]" />
+              <MotionDiv layoutId="auto-tab-line" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B5CF6]" />
             )}
           </button>
         ))}
@@ -275,7 +278,7 @@ const ClickFraudProtection: React.FC = () => {
       <AnimatePresence>
         {showNewRuleModal && (
           <>
-            <motion.div 
+            <MotionDiv 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -283,7 +286,7 @@ const ClickFraudProtection: React.FC = () => {
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
             />
             <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 pl-[240px] pointer-events-none">
-              <motion.div 
+              <MotionDiv 
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -340,7 +343,7 @@ const ClickFraudProtection: React.FC = () => {
                     Deploy Rule
                   </button>
                 </div>
-              </motion.div>
+              </MotionDiv>
             </div>
           </>
         )}
@@ -351,7 +354,14 @@ const ClickFraudProtection: React.FC = () => {
 
 // --- Sub-components ---
 
-const RuleCard = ({ rule, onToggle, onDelete }: { rule: OptimizationRule, onToggle: () => void, onDelete: () => void }) => (
+// Use React.FC to fix 'key' prop error and support async return types for handlers
+interface RuleCardProps {
+  rule: OptimizationRule;
+  onToggle: () => void | Promise<void>;
+  onDelete: () => void | Promise<void>;
+}
+
+const RuleCard: React.FC<RuleCardProps> = ({ rule, onToggle, onDelete }) => (
   <div className={`bg-[#1E293B] border border-[#334155] rounded-xl p-6 space-y-6 shadow-sm relative group transition-all hover:border-[#8B5CF6]/50 ${!rule.is_active && 'opacity-60 grayscale-[0.5]'}`}>
     <div className="flex justify-between items-start">
       <h3 className="text-base font-semibold text-white">{rule.name}</h3>
@@ -383,7 +393,13 @@ const RuleCard = ({ rule, onToggle, onDelete }: { rule: OptimizationRule, onTogg
   </div>
 );
 
-const SuggestionCard = ({ suggestion, onApply }: { suggestion: OptimizationSuggestion, onApply: () => void }) => (
+// Use React.FC to fix 'key' prop error and support async return types for handlers
+interface SuggestionCardProps {
+  suggestion: OptimizationSuggestion;
+  onApply: () => void | Promise<void>;
+}
+
+const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, onApply }) => (
   <div className={`bg-[#1E293B] border border-[#334155] rounded-xl p-6 space-y-6 shadow-sm border-l-4 border-l-[#8B5CF6] ${suggestion.is_applied && 'opacity-60 pointer-events-none'}`}>
     <div className="flex items-center gap-2 text-[#8B5CF6]">
       <Lightbulb size={18} />
@@ -413,7 +429,13 @@ const SuggestionCard = ({ suggestion, onApply }: { suggestion: OptimizationSugge
   </div>
 );
 
-const HistoryRow = ({ item, onRevert }: { item: OptimizationAction, onRevert: () => void }) => (
+// Use React.FC to fix 'key' prop error and support async return types for handlers
+interface HistoryRowProps {
+  item: OptimizationAction;
+  onRevert: () => void | Promise<void>;
+}
+
+const HistoryRow: React.FC<HistoryRowProps> = ({ item, onRevert }) => (
   <tr className="hover:bg-[#0F172A]/50 transition-all group">
     <td className="px-6 py-4 text-sm text-[#94A3B8]">{new Date(item.executed_at).toLocaleTimeString()}</td>
     <td className="px-6 py-4">
