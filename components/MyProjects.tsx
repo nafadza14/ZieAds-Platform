@@ -1,192 +1,293 @@
 
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  FolderKanban, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  ArrowUpRight,
-  Plus,
-  Play,
-  Pause,
-  Trash2,
-  ExternalLink,
-  Target,
-  MousePointer2,
-  TrendingUp
+  Search, Plus, RefreshCw, Edit2, Pause, Play, 
+  MoreHorizontal, ChevronRight, X, Layout, 
+  Smartphone, Monitor, AlertCircle, Check, 
+  Trash2, Copy, ExternalLink, Bot, Loader2
 } from 'lucide-react';
-import { Workspace, Campaign, Platform } from '../types';
-import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Platform, CampaignStatus, Workspace, Campaign } from '../types';
+import { listCampaigns, updateCampaignStatus } from '../services/dbService';
 
 interface MyProjectsProps {
-  activeWorkspace: Workspace | null;
+  activeWorkspace: Workspace;
 }
 
-const MyProjects: React.FC<MyProjectsProps> = ({ activeWorkspace }) => {
-  const navigate = useNavigate();
-  const campaigns = activeWorkspace?.campaigns || [];
+const Campaigns: React.FC<MyProjectsProps> = ({ activeWorkspace }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<CampaignStatus | 'All'>('All');
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCampaigns = async () => {
+    setLoading(true);
+    try {
+      const data = await listCampaigns({
+        workspace_id: activeWorkspace.id,
+        status: selectedStatus === 'All' ? undefined : selectedStatus
+      });
+      setCampaigns(data);
+    } catch (err) {
+      console.error("Failed to fetch campaigns:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [activeWorkspace.id, selectedStatus]);
+
+  const filteredCampaigns = useMemo(() => {
+    return campaigns.filter(c => {
+      return c.name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [searchQuery, campaigns]);
+
+  const handleToggleStatus = async (e: React.MouseEvent, campaign: Campaign) => {
+    e.stopPropagation();
+    const newStatus = campaign.status === 'active' ? 'paused' : 'active';
+    try {
+      await updateCampaignStatus(campaign.id, newStatus);
+      fetchCampaigns(); // Refresh list
+    } catch (err) {
+      alert("Failed to update status");
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-[#10B981]';
+      case 'learning': return 'bg-[#F59E0B]';
+      case 'paused': return 'bg-[#94A3B8]';
+      case 'error': return 'bg-[#EF4444]';
+      case 'pending': return 'bg-[#8B5CF6] animate-pulse';
+      default: return 'bg-[#475569]';
+    }
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 font-sans">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-slate-900 dark:text-white tracking-tight leading-none mb-1 transition-colors">My projects</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium text-sm transition-colors">
-            Managing <span className="font-bold text-primary">{campaigns.length}</span> active campaigns for {activeWorkspace?.name}
+    <div className="flex h-full bg-[#0F172A] text-[#F8FAFC] font-sans relative overflow-hidden">
+      {/* LEFT SIDEBAR (280px) */}
+      <aside className="w-[280px] border-r border-[#334155] p-6 space-y-8 flex-shrink-0">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
+          <input 
+            type="text" 
+            placeholder="Search campaigns..."
+            className="w-full h-10 pl-10 pr-4 bg-[#1E293B] border border-[#334155] rounded-lg text-sm outline-none focus:border-[#8B5CF6] transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[12px] font-semibold text-[#94A3B8] uppercase tracking-wider">Status</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {['All', 'active', 'paused', 'draft'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setSelectedStatus(status as any)}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-medium transition-all capitalize ${
+                  selectedStatus === status 
+                  ? 'bg-[#8B5CF6] border-[#8B5CF6] text-white' 
+                  : 'bg-transparent border-[#334155] text-[#94A3B8] hover:border-[#475569]'
+                }`}
+              >
+                <span>{status}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-[#F59E0B]/10 border-l-[3px] border-[#F59E0B] p-4 rounded-r-lg space-y-2">
+          <p className="text-[13px] text-[#F8FAFC] leading-relaxed">
+            AI is monitoring 5 active nodes. Deployment engine healthy.
           </p>
         </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => navigate('/builder')}
-            className="px-8 py-3 tosca-bg text-white font-bold rounded-2xl shadow-xl shadow-teal-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
-          >
-            <Plus size={18} /> New campaign
-          </button>
-        </div>
-      </header>
+      </aside>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Filter by campaign name or ID..."
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm font-medium outline-none focus:ring-4 focus:ring-primary/5 transition-all dark:text-white"
-            />
+      {/* MAIN AREA */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="p-6 flex items-center justify-between border-b border-[#334155] flex-shrink-0">
+          <div>
+            <h1 className="text-2xl font-semibold text-white">Campaigns</h1>
+            <p className="text-sm text-[#94A3B8]">Manage your ad orchestration</p>
           </div>
           <div className="flex items-center gap-3">
-             <button className="px-4 py-3 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl border border-slate-100 dark:border-slate-700 flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <Filter size={14} /> Filter
-             </button>
+            <button onClick={fetchCampaigns} className="bg-[#1E293B] border border-[#334155] p-2.5 rounded-lg text-[#94A3B8] hover:text-white transition-all">
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <button className="bg-[#8B5CF6] text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-[#7C3AED] transition-all flex items-center gap-2 shadow-lg shadow-[#8B5CF6]/10">
+              <Plus size={18} /> New Campaign
+            </button>
           </div>
-        </div>
+        </header>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[11px] font-bold tracking-tight text-slate-400 dark:text-slate-500 transition-colors">
-                <th className="px-8 py-5">Campaign node</th>
-                <th className="px-8 py-5">Objective</th>
-                <th className="px-8 py-5">Budget protocol</th>
-                <th className="px-8 py-5">Real-time roas</th>
-                <th className="px-8 py-5">Status</th>
-                <th className="px-8 py-5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 tabular-nums">
-              {campaigns.length > 0 ? campaigns.map((c) => (
-                <tr key={c.id} className="group text-sm hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                  <td className="px-8 py-6">
-                    <div className="space-y-1">
-                      <p className="font-bold text-slate-900 dark:text-white tracking-tight transition-colors">{c.name}</p>
-                      <div className="flex gap-1.5">
-                        {c.platforms?.map(p => (
-                          <span key={p} className="px-2 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-[10px] font-bold text-primary dark:text-teal-400 border border-teal-100 dark:border-teal-500/20">{p}</span>
-                        ))}
+        <div className="flex-1 overflow-auto">
+          {loading ? (
+             <div className="h-full flex items-center justify-center">
+                <Loader2 className="animate-spin text-[#8B5CF6]" size={32} />
+             </div>
+          ) : filteredCampaigns.length > 0 ? (
+            <table className="w-full text-left border-collapse min-w-[1000px]">
+              <thead>
+                <tr className="border-b border-[#334155]">
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#94A3B8] uppercase tracking-wider w-[60px]">Status</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#94A3B8] uppercase tracking-wider">Campaign Name</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#94A3B8] uppercase tracking-wider w-[100px]">Platform</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#94A3B8] uppercase tracking-wider w-[120px]">Daily Budget</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#94A3B8] uppercase tracking-wider w-[120px]">Objective</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#94A3B8] uppercase tracking-wider w-[80px]">AI</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#94A3B8] uppercase tracking-wider w-[100px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#334155]/30">
+                {filteredCampaigns.map((c) => (
+                  <tr 
+                    key={c.id} 
+                    className="group hover:bg-[#1E293B] cursor-pointer transition-colors"
+                    onClick={() => setSelectedCampaign(c)}
+                  >
+                    <td className="px-6 py-5">
+                      <div className={`w-2 h-2 rounded-full ${getStatusColor(c.status)}`} />
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col">
+                        <span className="text-base font-medium text-white">{c.name}</span>
+                        {c.platform_campaign_id && <span className="text-[10px] text-[#475569] font-mono">{c.platform_campaign_id}</span>}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                     <span className="text-slate-600 dark:text-slate-400 font-medium">{c.objective}</span>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="space-y-0.5">
-                      <p className="text-slate-900 dark:text-white font-bold tracking-tight">${c.daily_budget.toLocaleString()}/day</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">Spend: ${c.metrics?.spend || 0}</p>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                     <div className="flex items-center gap-2">
-                        <span className="text-primary dark:text-teal-400 font-black text-base">{c.metrics?.roas || 0}x</span>
-                        <TrendingUp size={14} className="text-green-500" />
-                     </div>
-                  </td>
-                  <td className="px-8 py-6">
-                     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold ${
-                       c.status === 'active' 
-                       ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-500/20' 
-                       : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                     }`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${c.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></div>
-                        <span className="capitalize">{c.status}</span>
-                     </div>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary dark:hover:text-teal-400 shadow-sm transition-all">
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <PlatformIcon platform={c.platform} size={20} />
+                        <span className="text-sm font-medium text-[#94A3B8]">{c.platform}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-sm text-[#94A3B8]">${c.budget_daily}/day</td>
+                    <td className="px-6 py-5 text-sm text-white capitalize">{c.objective}</td>
+                    <td className="px-6 py-5">
+                      <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${c.ai_managed !== false ? 'bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20' : 'bg-[#1E293B] text-[#94A3B8] border border-[#334155]'}`}>
+                        <Bot size={12} /> Auto
+                      </div>
+                    </td>
+                    <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1">
+                        <button className="p-2 text-[#94A3B8] hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded-lg transition-all"><Edit2 size={16} /></button>
+                        <button 
+                          onClick={(e) => handleToggleStatus(e, c)}
+                          className="p-2 text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/5 rounded-lg transition-all"
+                        >
                           {c.status === 'active' ? <Pause size={16} /> : <Play size={16} />}
-                       </button>
-                       <button className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary dark:hover:text-teal-400 shadow-sm transition-all">
-                          <ExternalLink size={16} />
-                       </button>
-                       <button className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 shadow-sm transition-all">
-                          <Trash2 size={16} />
-                       </button>
-                    </div>
-                    <MoreHorizontal className="text-slate-300 dark:text-slate-600 group-hover:hidden mx-auto md:mr-0 md:ml-auto" />
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={6} className="px-8 py-32 text-center space-y-4 transition-colors">
-                     <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-center mx-auto text-slate-200 dark:text-slate-700">
-                        <FolderKanban size={32} />
-                     </div>
-                     <div className="space-y-1">
-                        <p className="text-slate-900 dark:text-white font-bold text-lg">No projects detected</p>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Initialize your first campaign to begin monitoring growth signals.</p>
-                     </div>
-                     <button 
-                      onClick={() => navigate('/builder')}
-                      className="px-6 py-2.5 tosca-bg text-white font-bold rounded-xl text-sm"
-                     >
-                       Launch project
-                     </button>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-20 space-y-6 text-center animate-in fade-in duration-700">
+              <div className="w-24 h-24 bg-[#1E293B] rounded-full flex items-center justify-center text-[#8B5CF6]/50">
+                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M4.5 16.5L12 4.5L19.5 16.5H4.5Z" strokeLinecap="round" strokeLinejoin="round"/>
+                 </svg>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-[20px] font-semibold text-white">No campaigns found</h2>
+                <p className="text-[14px] text-[#94A3B8] max-w-xs">Create your first campaign to start advertising.</p>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </main>
 
-      {/* Campaign Health Summary */}
-      <div className="grid md:grid-cols-3 gap-6">
-         <HealthCard 
-            title="Ad reach efficiency" 
-            value="Optimal" 
-            icon={<Target className="text-blue-500" size={20} />} 
-            desc="Algorithms are successfully reaching high-intent cohorts."
-         />
-         <HealthCard 
-            title="Neural link stability" 
-            value="99.9%" 
-            icon={<TrendingUp className="text-teal-500" size={20} />} 
-            desc="API synchronization with ad platforms is performing at peak."
-         />
-         <HealthCard 
-            title="Conversion velocity" 
-            value="High" 
-            icon={<MousePointer2 className="text-primary" size={20} />} 
-            desc="Landing pages are maintaining a consistent conversion rate."
-         />
-      </div>
+      {/* DETAIL PANEL */}
+      <AnimatePresence>
+        {selectedCampaign && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedCampaign(null)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-[400px] bg-[#1E293B] border-left border-[#334155] shadow-2xl z-[110] flex flex-col"
+            >
+              <div className="p-6 flex items-center justify-between border-b border-[#334155]">
+                 <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/5 rounded-lg">
+                      <PlatformIcon platform={selectedCampaign.platform} size={32} />
+                    </div>
+                    <div>
+                       <h2 className="text-[20px] font-semibold text-white">{selectedCampaign.name}</h2>
+                       <div className="flex items-center gap-2 mt-1">
+                          <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor(selectedCampaign.status)}`} />
+                          <span className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider">{selectedCampaign.status}</span>
+                       </div>
+                    </div>
+                 </div>
+                 <button onClick={() => setSelectedCampaign(null)} className="p-2 text-[#94A3B8] hover:text-white hover:bg-white/5 rounded-lg">
+                    <X size={20} />
+                 </button>
+              </div>
+
+              <div className="flex-1 overflow-auto p-6 space-y-8">
+                 <div className="grid grid-cols-2 gap-4">
+                    <DetailStat label="Daily Budget" value={`$${selectedCampaign.budget_daily}`} />
+                    <DetailStat label="Objective" value={selectedCampaign.objective} />
+                    <DetailStat label="Targeting" value={`${selectedCampaign.targeting?.locations?.[0] || 'Global'}`} />
+                    <DetailStat label="Started" value={new Date(selectedCampaign.start_date).toLocaleDateString()} />
+                 </div>
+
+                 <div className="space-y-4">
+                    <h3 className="text-base font-semibold text-white">Orchestration Details</h3>
+                    <div className="p-4 bg-[#0F172A] rounded-xl border border-[#334155] font-mono text-[10px] text-[#94A3B8] space-y-2">
+                       <p>DEPLOY_ID: {selectedCampaign.id}</p>
+                       <p>EXT_ID: {selectedCampaign.platform_campaign_id || 'Awaiting synchronization...'}</p>
+                       <p>LAST_SYNC: {selectedCampaign.updated_at ? new Date(selectedCampaign.updated_at).toLocaleTimeString() : 'N/A'}</p>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="p-6 border-t border-[#334155] bg-[#111827] flex gap-2">
+                 <button 
+                  onClick={(e) => handleToggleStatus(e, selectedCampaign)}
+                  className="flex-1 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-2"
+                 >
+                    {selectedCampaign.status === 'active' ? <><Pause size={14} /> Pause Campaign</> : <><Play size={14} /> Activate Campaign</>}
+                 </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-const HealthCard = ({ title, value, icon, desc }: { title: string, value: string, icon: React.ReactNode, desc: string }) => (
-  <div className="p-8 bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors group">
-     <div className="flex items-center justify-between mb-4">
-        <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
-           {icon}
-        </div>
-        <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{value}</span>
-     </div>
-     <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{title}</h4>
-     <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{desc}</p>
+const PlatformIcon = ({ platform, size = 16 }: { platform: Platform, size?: number }) => {
+  switch (platform) {
+    case Platform.Meta: return <div className="text-[#3B82F6]"><Layout size={size} fill="currentColor" fillOpacity={0.1} /></div>;
+    case Platform.Google: return <div className="text-[#EF4444]"><Monitor size={size} fill="currentColor" fillOpacity={0.1} /></div>;
+    case Platform.TikTok: return <div className="text-white"><Smartphone size={size} fill="currentColor" fillOpacity={0.1} /></div>;
+    default: return <Monitor size={size} />;
+  }
+};
+
+const DetailStat = ({ label, value }: { label: string, value: string }) => (
+  <div className="p-4 bg-white/5 rounded-xl border border-[#334155]">
+    <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest mb-1">{label}</p>
+    <p className="text-sm font-bold text-white tracking-tight capitalize">{value}</p>
   </div>
 );
 
-export default MyProjects;
+export default Campaigns;

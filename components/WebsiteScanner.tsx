@@ -22,10 +22,10 @@ import {
   History,
   RotateCcw
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { scanWebsite } from '../services/geminiService';
 import { updateWorkspaceBrandProfile } from '../services/dbService';
 import { BrandProfile, Workspace } from '../types';
-import { useNavigate } from 'react-router-dom';
 
 interface WebsiteScannerProps {
   onScanComplete: (profile: BrandProfile) => void;
@@ -49,6 +49,7 @@ const WebsiteScanner: React.FC<WebsiteScannerProps> = ({ onScanComplete, current
     narrative: boolean;
     audience: boolean;
     visuals: boolean;
+    // Fix: Use false instead of boolean as initial values, and use commas instead of semicolons in object literal
   }>({ assets: false, narrative: false, audience: false, visuals: false });
   
   const [scannedProfile, setScannedProfile] = useState<BrandProfile | null>(currentProfile);

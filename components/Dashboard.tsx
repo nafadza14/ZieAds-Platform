@@ -1,273 +1,239 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
+  LineChart, Line
 } from 'recharts';
 import { 
-  TrendingUp, 
-  DollarSign, 
-  Zap, 
-  ArrowRight, 
-  LayoutDashboard,
-  Target,
-  Activity,
-  Award,
-  ChevronRight,
-  Sun,
-  Moon,
-  ArrowUpRight,
-  Clock,
-  ShieldAlert,
-  ArrowDownRight,
-  Sparkles,
-  PieChart as PieIcon,
-  Layers
+  CheckCircle2, AlertTriangle, Sparkles, TrendingUp, TrendingDown, RefreshCw, Loader2
 } from 'lucide-react';
-import { Workspace, AIInsight } from '../types';
+import { fetchDashboardSummary, triggerAnalyticsSync } from '../services/dbService';
+import { DashboardSummary, Platform } from '../types';
 
-interface DashboardProps {
-  activeWorkspace: Workspace | null;
-  toggleTheme?: () => void;
-  isDarkMode?: boolean;
-  insights: AIInsight[];
-}
+const Dashboard: React.FC = () => {
+  const [timeRange, setTimeRange] = useState('7d');
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
-const Dashboard: React.FC<DashboardProps> = ({ activeWorkspace, toggleTheme, isDarkMode, insights = [] }) => {
-  const unifiedStats = {
-    spend: 12450.80,
-    revenue: 42890.30,
-    roas: 3.44,
-    cpa: 2.15
+  const loadData = async (range: string) => {
+    setLoading(true);
+    try {
+      // Mock workspace ID for implementation
+      const data = await fetchDashboardSummary('zieads-root-master', range);
+      setSummary(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const platformDistribution = [
-    { name: 'Meta', value: 45, color: '#7C5CFF' },
-    { name: 'Google', value: 35, color: '#14B8A6' },
-    { name: 'TikTok', value: 20, color: '#94A3B8' },
-  ];
+  useEffect(() => {
+    loadData(timeRange);
+  }, [timeRange]);
 
-  const topCreatives = [
-    { id: 'c1', name: 'Performance V1', ctr: 4.8, roas: 5.2, img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=200' },
-    { id: 'c2', name: 'Minimal Dark', ctr: 3.9, roas: 4.1, img: 'https://images.unsplash.com/photo-1556742049-02e49f61b4ee?auto=format&fit=crop&q=80&w=200' },
-    { id: 'c3', name: 'Viral Hook', ctr: 6.2, roas: 3.8, img: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&q=80&w=200' },
-  ];
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await triggerAnalyticsSync('zieads-root-master');
+      await loadData(timeRange);
+    } catch (err) {
+      alert("Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
-  const chartData = [
-    { date: 'Feb 07', spend: 400, revenue: 1200 },
-    { date: 'Feb 08', spend: 550, revenue: 1800 },
-    { date: 'Feb 09', spend: 300, revenue: 900 },
-    { date: 'Feb 10', spend: 700, revenue: 2500 },
-    { date: 'Feb 11', spend: 600, revenue: 2100 },
-    { date: 'Feb 12', spend: 850, revenue: 3200 },
-    { date: 'Feb 13', spend: 500, revenue: 1900 },
-  ];
-
-  const unresolvedInsights = (insights || []).filter(i => !i?.resolved);
+  if (loading && !summary) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-20 space-y-4">
+        <Loader2 className="animate-spin text-[#8B5CF6]" size={48} />
+        <p className="text-[#94A3B8] font-bold uppercase tracking-widest text-sm">Synchronizing Command Center...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 selection:bg-accent/20">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <nav className="flex items-center gap-2 text-[11px] font-mono font-bold text-slate-500 dark:text-slate-600 uppercase tracking-widest">
-            <LayoutDashboard size={12} className="text-accent" />
-            <span>ZieAds OS</span>
-            <ChevronRight size={10} className="opacity-30" />
-            <span className="text-slate-900 dark:text-white">{activeWorkspace?.name || 'Workspace'}</span>
-          </nav>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight font-display">Command Overview</h1>
+    <div className="bg-[#0F172A] min-h-full p-6 text-[#F8FAFC] font-sans">
+      {/* HEADER SECTION */}
+      <header className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <span className="text-2xl font-bold tracking-tight text-white font-display">ZieAds</span>
+          <h1 className="text-2xl font-semibold text-white">Command Center</h1>
         </div>
-
-        <div className="flex items-center gap-3">
-           <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm dark:shadow-none">
-              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-           </button>
-           <button className="px-5 py-2.5 bg-accent text-white font-bold rounded-xl text-[13px] shadow-lg shadow-accent/20 flex items-center gap-2 hover:bg-accent/90 transition-all">
-             <Activity size={16} /> Live Feed
-           </button>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleSync}
+            disabled={syncing}
+            className={`flex items-center gap-2 px-3 py-1.5 bg-[#10B981]/10 rounded-lg border border-[#10B981]/20 hover:bg-[#10B981]/20 transition-all ${syncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <RefreshCw size={14} className={`${syncing ? 'animate-spin' : ''} text-[#10B981]`} />
+            <span className="text-[12px] font-medium text-[#10B981]">{syncing ? 'Syncing...' : 'Live Sync'}</span>
+          </button>
+          <button className="bg-[#8B5CF6] text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-[#7C3AED] transition-all shadow-lg shadow-[#8B5CF6]/10">
+            Apply Recommendations
+          </button>
         </div>
       </header>
 
-      {/* Unified Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Unified Spend" value={`$${unifiedStats.spend.toLocaleString()}`} trend="+14.2%" trendUp icon={<DollarSign size={18} />} />
-        <MetricCard title="Unified Revenue" value={`$${unifiedStats.revenue.toLocaleString()}`} trend="+22.5%" trendUp icon={<Award size={18} />} />
-        <MetricCard title="Cross-Platform ROAS" value={`${unifiedStats.roas}x`} trend="+0.4x" trendUp icon={<TrendingUp size={18} />} />
-        <MetricCard title="Avg. CPA" value={`$${unifiedStats.cpa}`} trend="-12%" trendUp icon={<Target size={18} />} />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        {/* Main Performance Area */}
-        <div className="xl:col-span-8 space-y-8">
-           <div className="bg-white dark:bg-panel p-8 rounded-[32px] border border-slate-200 dark:border-white/5 shadow-sm">
-              <div className="flex items-center justify-between mb-8">
-                 <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight font-display flex items-center gap-2">
-                    <Layers size={18} className="text-accent" />
-                    Network Volume Velocity
-                 </h3>
-                 <div className="flex items-center gap-4">
-                   <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                     <div className="w-2 h-2 rounded-full bg-accent"></div>
-                     <span>Revenue</span>
-                   </div>
-                   <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                     <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
-                     <span>Spend</span>
-                   </div>
-                 </div>
+      {summary && (
+        <div className="max-w-[1200px] mx-auto space-y-4 animate-in fade-in duration-700">
+          {/* TOP CARD (Performance Overview) */}
+          <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 grid grid-cols-1 md:grid-cols-10 gap-8">
+            <div className="md:col-span-3 space-y-4">
+              <div className="space-y-1">
+                <div className="text-[72px] font-bold text-white leading-none">
+                  {Math.floor(summary.summary.total_roas * 10)}
+                </div>
+                <div className="text-[14px] font-medium text-[#10B981]">
+                  AI Efficiency Score: {summary.summary.total_roas.toFixed(2)}x
+                </div>
               </div>
-              <div className="h-72 w-full">
+              <div className="h-16 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                   <AreaChart data={chartData}>
-                      <defs>
-                        <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#7C5CFF" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#7C5CFF" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)"} />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: isDarkMode ? '#52525B' : '#94A3B8', fontFamily: 'JetBrains Mono' }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: isDarkMode ? '#52525B' : '#94A3B8', fontFamily: 'JetBrains Mono' }} />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: isDarkMode ? '#111318' : '#FFFFFF', borderRadius: '12px', border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid #E2E8F0', color: isDarkMode ? '#fff' : '#000' }}
-                        itemStyle={{ fontSize: '12px' }}
-                      />
-                      <Area type="monotone" dataKey="revenue" stroke="#7C5CFF" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-                      <Area type="monotone" dataKey="spend" stroke={isDarkMode ? "#3F3F46" : "#E2E8F0"} strokeWidth={2} fillOpacity={0} strokeDasharray="5 5" />
-                   </AreaChart>
+                  <AreaChart data={summary.trend}>
+                    <Area type="monotone" dataKey="revenue" stroke="#10B981" fill="#10B981" fillOpacity={0.1} strokeWidth={2} />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
-           </div>
+              <p className="text-[14px] text-[#94A3B8] italic">
+                "Performing at {summary.summary.total_roas > 3 ? 'high' : 'standard'} efficiency benchmarks."
+              </p>
+            </div>
 
-           <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white dark:bg-panel p-8 rounded-[32px] border border-slate-200 dark:border-white/5 shadow-sm">
-                 <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight font-display mb-6 flex items-center gap-2">
-                   <PieIcon size={18} className="text-accent" />
-                   Budget Distribution
-                 </h3>
-                 <div className="space-y-6">
-                    {platformDistribution.map(p => (
-                      <div key={p.name} className="space-y-2">
-                         <div className="flex justify-between items-center text-[11px] font-mono font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                            <span>{p.name}</span>
-                            <span className="text-slate-900 dark:text-white">{p.value}%</span>
-                         </div>
-                         <div className="h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${p.value}%`, backgroundColor: p.color }}></div>
-                         </div>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-
-              <div className="bg-white dark:bg-panel p-8 rounded-[32px] border border-slate-200 dark:border-white/5 shadow-sm">
-                 <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight font-display mb-6 flex items-center gap-2">
-                   <Award size={18} className="text-accent" />
-                   Top Creative Performance
-                 </h3>
-                 <div className="space-y-4">
-                    {topCreatives.map(c => (
-                      <div key={c.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-white/5">
-                         <img src={c.img} className="w-10 h-10 rounded-xl object-cover" alt="" />
-                         <div className="flex-1 min-w-0">
-                            <h4 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{c.name}</h4>
-                            <div className="flex gap-3 mt-0.5">
-                               <span className="text-[10px] font-mono font-bold text-accent">{c.roas}x ROAS</span>
-                               <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-600">{c.ctr}% CTR</span>
-                            </div>
-                         </div>
-                         <ArrowUpRight size={14} className="text-slate-300 dark:text-slate-700" />
-                      </div>
-                    ))}
-                 </div>
-              </div>
-           </div>
-        </div>
-
-        {/* Intelligence / Alerts Sidebar */}
-        <div className="xl:col-span-4 space-y-8">
-           <div className="bg-white dark:bg-panel rounded-[32px] p-8 text-slate-900 dark:text-white border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[40px] rounded-full -mr-16 -mt-16"></div>
-              
-              <div className="flex items-center gap-3 mb-8 relative z-10">
-                 <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
-                    <Sparkles size={20} fill="currentColor" />
-                 </div>
-                 <h3 className="text-lg font-bold tracking-tight font-display">AI Alerts Panel</h3>
-              </div>
-
-              <div className="space-y-4 relative z-10">
-                 {unresolvedInsights.length > 0 ? unresolvedInsights.map(insight => (
-                   <div key={insight.id} className={`p-4 rounded-2xl border transition-all ${
-                     insight.severity === 'critical' ? 'bg-red-500/5 border-red-500/20' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'
-                   }`}>
-                      <div className="flex items-center justify-between mb-2">
-                         <div className="flex items-center gap-2">
-                            <div className={`w-1.5 h-1.5 rounded-full ${insight.severity === 'critical' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-teal-500'}`}></div>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{insight.insight_type}</span>
-                         </div>
-                         <span className="text-[9px] font-mono text-slate-400 dark:text-slate-700">Just now</span>
-                      </div>
-                      <p className="text-[13px] font-medium text-slate-600 dark:text-slate-300 leading-relaxed">{insight.message}</p>
-                      <button className="mt-4 flex items-center gap-2 text-[11px] font-bold text-slate-900 dark:text-white group/btn hover:text-accent transition-colors">
-                         Review <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                      </button>
-                   </div>
-                 )) : (
-                   <div className="py-12 text-center space-y-4 opacity-30">
-                      <div className="w-12 h-12 rounded-full border border-slate-200 dark:border-white/10 flex items-center justify-center mx-auto">
-                        <Clock size={24} className="text-slate-400" />
-                      </div>
-                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Awaiting signals...</p>
-                   </div>
-                 )}
-              </div>
-           </div>
-
-           <div className="bg-white dark:bg-panel p-8 rounded-[32px] border border-slate-200 dark:border-white/5 shadow-sm">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight font-display mb-6 flex items-center gap-2">
-                <ShieldAlert size={18} className="text-accent" />
-                Fraud Shield Protocol
-              </h3>
+            <div className="md:col-span-7 grid md:grid-cols-3 gap-8">
               <div className="space-y-4">
-                 <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 space-y-3">
-                    <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-2">
-                          <Activity size={14} className="text-accent" />
-                          <span className="text-[12px] font-bold text-slate-600 dark:text-slate-300">Scanning Intensity</span>
-                       </div>
-                       <span className="text-[11px] font-mono font-bold text-accent">High</span>
-                    </div>
-                    <div className="h-1 w-full bg-slate-200 dark:bg-slate-800 rounded-full">
-                       <div className="h-full w-4/5 bg-accent rounded-full"></div>
-                    </div>
-                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-600 italic">Fingerprint validation active for all campaigns.</p>
-                 </div>
+                <h3 className="text-[#10B981] text-base font-semibold flex items-center gap-2">
+                  <CheckCircle2 size={16} /> What's Working
+                </h3>
+                <ul className="text-sm text-[#F8FAFC] space-y-3 font-medium">
+                  {summary.by_campaign.slice(0, 3).map((camp, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span>•</span> {camp.name} ({camp.roas}x)
+                    </li>
+                  ))}
+                </ul>
               </div>
-           </div>
+
+              <div className="space-y-4">
+                <h3 className="text-[#F59E0B] text-base font-semibold flex items-center gap-2">
+                  <AlertTriangle size={16} /> Watch Out
+                </h3>
+                <ul className="text-sm text-[#F8FAFC] space-y-3 font-medium">
+                  <li className="flex items-start gap-2"><span>•</span> TikTok CPM up 18% in 24 hours</li>
+                  <li className="flex items-start gap-2"><span>•</span> Retargeting audience saturated</li>
+                  <li className="flex items-start gap-2"><span>•</span> Pixel firing delays detected</li>
+                </ul>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-[#8B5CF6] text-base font-semibold flex items-center gap-2">
+                  <Sparkles size={16} /> AI Suggestions
+                </h3>
+                <div className="space-y-3">
+                  {[
+                    "Scale Meta Winner #1 by 20%",
+                    "Rotate tired UGC creative",
+                    "Fix tracking issue"
+                  ].map((sug, i) => (
+                    <div key={i} className="flex flex-col gap-2">
+                      <p className="text-xs font-medium text-[#F8FAFC]">{sug}</p>
+                      <button className="w-fit px-3 py-1 border border-[#8B5CF6] text-[#8B5CF6] rounded text-[10px] font-bold hover:bg-[#8B5CF6] hover:text-white transition-all">
+                        Do it
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* METRICS ROW */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard value={`$${summary.summary.total_spend.toLocaleString()}`} trend="+14.2%" label="TOTAL SPEND" />
+            <MetricCard value={`$${summary.summary.total_revenue.toLocaleString()}`} trend="+22.5%" label="REVENUE" />
+            <MetricCard value={`${summary.summary.total_roas.toFixed(2)}x`} trend="+0.4%" label="ROAS" />
+            <MetricCard value={summary.summary.total_conversions.toLocaleString()} trend="+8%" label="TOTAL SALES" />
+          </div>
+
+          {/* BOTTOM SECTION */}
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+            <div className="lg:col-span-6 bg-[#1E293B] border border-[#334155] rounded-xl p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-semibold text-white">Revenue vs Spend</h3>
+                <div className="flex bg-[#0F172A] p-1 rounded-lg border border-[#334155]">
+                  {['7d', '30d'].map(range => (
+                    <button
+                      key={range}
+                      onClick={() => setTimeRange(range)}
+                      className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${timeRange === range ? 'bg-[#1E293B] text-white shadow-sm' : 'text-[#94A3B8] hover:text-white'}`}
+                    >
+                      {range === '7d' ? '7 days' : '30 days'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="h-[240px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={summary.trend}>
+                    <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} hide />
+                    <YAxis hide />
+                    <Tooltip contentStyle={{ backgroundColor: '#1E293B', border: '1px solid #334155' }} />
+                    <Line type="monotone" dataKey="revenue" stroke="#8B5CF6" strokeWidth={3} dot={false} />
+                    <Line type="monotone" dataKey="spend" stroke="#94A3B8" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="lg:col-span-4 bg-[#1E293B] border border-[#334155] rounded-xl p-6 space-y-8">
+              <h3 className="text-base font-semibold text-white">Budget by Platform</h3>
+              <div className="space-y-6">
+                {summary.by_platform.map((p, i) => (
+                  <PlatformBar 
+                    key={i}
+                    label={p.platform} 
+                    percent={Math.floor((p.spend / summary.summary.total_spend) * 100)} 
+                    amount={`$${p.spend.toLocaleString()}`} 
+                    roas={`${p.roas}x`} 
+                    color={p.platform === Platform.Meta ? '#3B82F6' : p.platform === Platform.Google ? '#EF4444' : '#000000'} 
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-const MetricCard = ({ title, value, trend, trendUp, icon }: any) => (
-  <div className="bg-white dark:bg-panel p-8 rounded-[32px] border border-slate-200 dark:border-white/5 group hover:border-accent dark:hover:border-white/10 transition-all duration-300 relative overflow-hidden shadow-sm dark:shadow-none">
-    <div className="absolute -bottom-6 -right-6 text-slate-100 dark:text-white/5 group-hover:text-accent/5 transition-colors duration-500">
-      {React.cloneElement(icon, { size: 100 })}
+const MetricCard = ({ value, trend, label }: any) => (
+  <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 h-[120px] flex flex-col justify-between shadow-sm hover:border-[#8B5CF6]/50 transition-colors">
+    <div className="text-[28px] font-bold text-white leading-none">{value}</div>
+    <div className="flex items-center justify-between">
+      <span className="text-[14px] font-medium text-[#10B981]">{trend}</span>
+      <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">{label}</span>
     </div>
-    
-    <div className="flex items-center justify-between mb-6 relative z-10">
-       <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-accent transition-colors">
-          {icon}
-       </div>
-       <div className={`flex items-center gap-1 text-[11px] font-mono font-bold ${trendUp ? 'text-teal-600 dark:text-teal-500' : 'text-red-600 dark:text-red-500'}`}>
-          {trendUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-          {trend}
-       </div>
+  </div>
+);
+
+const PlatformBar = ({ label, percent, amount, roas, color }: any) => (
+  <div className="space-y-2">
+    <div className="flex justify-between text-xs font-bold">
+      <div className="flex gap-2 text-[#F8FAFC]">
+        <span className="capitalize">{label}</span>
+        <span className="text-[#94A3B8]">{percent}% ({amount})</span>
+      </div>
+      <div className="text-white">{roas} ROAS</div>
     </div>
-    
-    <p className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest mb-1 relative z-10">{title}</p>
-    <p className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight font-display relative z-10">{value}</p>
+    <div className="h-2 w-full bg-[#0F172A] rounded-full overflow-hidden">
+      <div 
+        className="h-full rounded-full transition-all duration-1000" 
+        style={{ width: `${percent}%`, backgroundColor: color }}
+      ></div>
+    </div>
   </div>
 );
 

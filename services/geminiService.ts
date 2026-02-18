@@ -1,7 +1,9 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { BrandProfile, AdCreative, Platform, CampaignObjective, Recommendation, BrandDNA } from "../types";
 
 // Always use process.env.API_KEY and named parameter for initialization
+// Create a new GoogleGenAI instance right before making an API call to ensure it always uses the most up-to-date API key.
 const getAi = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export interface CanvasLayer {
@@ -66,6 +68,7 @@ export const scanWebsite = async (url: string, logoBase64?: string): Promise<Bra
       });
     }
 
+    // Using gemini-3-flash-preview for brand analysis tasks
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: { parts },
@@ -96,6 +99,7 @@ export const scanWebsite = async (url: string, logoBase64?: string): Promise<Bra
       },
     });
 
+    // Access response.text directly as a property
     const text = response.text?.trim();
     if (!text) throw new Error("AI failed to return content for DNA analysis.");
     const data = JSON.parse(text);
@@ -139,6 +143,7 @@ export const generateHybridAdCreative = async (
       Return 3 high-converting variations in JSON format.
     `;
 
+    // Using gemini-3-flash-preview for creative generation tasks
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
@@ -193,6 +198,7 @@ export const generateHybridAdCreative = async (
       },
     });
 
+    // Access response.text directly as a property
     const text = response.text?.trim();
     if (!text) throw new Error("AI failed to return hybrid creatives.");
     return JSON.parse(text);
@@ -205,6 +211,7 @@ export const generateHybridAdCreative = async (
 export const generateImageForAd = async (prompt: string, brandName?: string): Promise<string> => {
   try {
     const ai = getAi();
+    // Using gemini-2.5-flash-image for general image generation tasks
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -224,6 +231,7 @@ export const generateImageForAd = async (prompt: string, brandName?: string): Pr
     const candidate = response.candidates?.[0];
     if (candidate?.content?.parts) {
       for (const part of candidate.content.parts) {
+        // Iterate through all parts to find the image part
         if (part.inlineData) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }
@@ -261,6 +269,7 @@ export const getRecommendations = async (campaigns: any[]): Promise<Recommendati
         },
       },
     });
+    // Access response.text directly as a property
     return JSON.parse(response.text || '[]');
   } catch (error) {
     return [];
@@ -303,6 +312,7 @@ export const generateDynamicAdTemplateLogic = async (
         }
       }
     });
+    // Access response.text directly as a property
     return JSON.parse(response.text || '{}');
   } catch (error) {
     throw error;

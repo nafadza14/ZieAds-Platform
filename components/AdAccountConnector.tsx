@@ -1,239 +1,279 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  Target, 
-  RefreshCw, 
-  CheckCircle2, 
-  Loader2, 
-  Sparkles, 
-  Lock, 
-  Plus
+  RefreshCw, CheckCircle2, X, Plus, Trash2, 
+  ChevronRight, Circle, ArrowRight
 } from 'lucide-react';
-import { supabase } from '../services/supabaseClient';
-import { AdAccount, Platform } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Platform } from '../types';
+
+type ConnectStep = 'initial' | 'select' | 'success';
 
 const AdAccountConnector: React.FC = () => {
-  const [accounts, setAccounts] = useState<AdAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const [connectStep, setConnectStep] = useState<ConnectStep>('initial');
+  const [activePlatform, setActivePlatform] = useState<Platform | null>(null);
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('ad_accounts')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      
-      const mapped = (data || []).map((acc: any) => ({
-        id: acc.id,
-        platform: acc.platform as Platform,
-        accountId: acc.account_id,
-        status: acc.status as 'active' | 'error' | 'disconnected'
-      }));
-      setAccounts(mapped);
-    } catch (err) {
-      console.error('Error fetching ad accounts:', err);
-    } finally {
-      setLoading(false);
-    }
+  const startConnect = (platform: Platform) => {
+    setActivePlatform(platform);
+    setConnectStep('initial');
+    setShowConnectModal(true);
   };
 
-  const handleConnect = async (platform: Platform) => {
-    if (platform === Platform.LinkedIn) return;
-
-    setConnectingPlatform(platform);
-    
-    setTimeout(async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const mockAccountId = `ACT_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        
-        const { error } = await supabase
-          .from('ad_accounts')
-          .insert([{
-            user_id: user.id,
-            platform,
-            account_id: mockAccountId,
-            status: 'active',
-            access_token_encrypted: 'mock_encrypted_token'
-          }]);
-
-        if (error) throw error;
-        await fetchAccounts();
-        
-        setShowCelebration(true);
-        setTimeout(() => setShowCelebration(false), 5000);
-      } catch (err) {
-        console.error('Connection failed:', err);
-      } finally {
-        setConnectingPlatform(null);
-      }
-    }, 2000);
+  const nextStep = () => {
+    if (connectStep === 'initial') setConnectStep('select');
+    else if (connectStep === 'select') setConnectStep('success');
   };
 
-  const platformsList = [
-    { id: Platform.Meta, label: 'Meta Ads', desc: 'Facebook and Instagram' },
-    { id: Platform.Google, label: 'Google Ads', desc: 'Search, Display, and Video' },
-    { id: Platform.TikTok, label: 'TikTok Ads', desc: 'Short form viral video' },
-    { id: Platform.Bing, label: 'Bing Ads', desc: 'Microsoft search network' },
-    { id: Platform.LinkedIn, label: 'LinkedIn Ads', desc: 'B2B and professional', unavailable: true },
-  ];
+  const closePortal = () => {
+    setShowConnectModal(false);
+    setActivePlatform(null);
+  };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700 font-sans">
-      {showCelebration && (
-        <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
-          <div className="bg-white/90 backdrop-blur-md p-12 rounded-[40px] shadow-2xl border border-primary/20 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
-            <div className="w-20 h-20 tosca-bg rounded-full flex items-center justify-center text-white animate-bounce">
-              <Sparkles size={40} />
-            </div>
-            <div className="text-center">
-              <h2 className="text-3xl font-extrabold text-slate-900 mb-2 font-display">Launch Celebration</h2>
-              <p className="text-slate-500 font-medium">Your ad account is connected successfully. Time to grow.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 mb-2 font-display tracking-tight">Ad Account Hub</h1>
-          <p className="text-slate-500 font-medium text-sm">Connect and manage your multi platform advertising permissions from one secure vault.</p>
-        </div>
-        <div className="flex items-center gap-2.5 px-4 py-2 bg-slate-900 rounded-full border border-slate-800 shadow-xl">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-[11px] font-bold text-slate-400 tracking-wide">AES 256 Encryption active</span>
-        </div>
+    <div className="bg-[#0F172A] min-h-full p-8 text-[#F8FAFC] font-sans">
+      {/* HEADER */}
+      <header className="mb-10 space-y-1">
+        <h1 className="text-[24px] font-semibold text-white">Connect Ad Accounts</h1>
+        <p className="text-[14px] text-[#94A3B8]">Link your advertising platforms</p>
       </header>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {platformsList.map((p) => {
-          const connectedAccount = accounts.find(acc => acc.platform === p.id);
-          const isConnecting = connectingPlatform === p.id;
-          
-          return (
-            <div 
-              key={p.id} 
-              className={`group relative overflow-hidden rounded-[32px] border transition-all duration-300 ${
-                p.unavailable 
-                ? 'bg-slate-100 border-slate-200 grayscale' 
-                : 'bg-white border-slate-200 hover:border-primary hover:shadow-2xl hover:shadow-teal-500/10'
-              }`}
-            >
-              <div className="p-8 flex items-start justify-between">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${
-                      connectedAccount ? 'tosca-bg text-white' : 'bg-slate-50 text-slate-400'
-                    }`}>
-                      <Target size={28} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-900 font-display">{p.label}</h3>
-                      <p className="text-[13px] text-slate-400 font-medium">{p.desc}</p>
-                    </div>
-                  </div>
-
-                  {connectedAccount ? (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-xl w-fit">
-                        <CheckCircle2 size={16} />
-                        <span className="text-[11px] font-bold">Connected</span>
-                      </div>
-                      <p className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded w-fit">ID: {connectedAccount.accountId}</p>
-                    </div>
-                  ) : p.unavailable ? (
-                    <div className="flex items-center gap-2 text-slate-400 bg-slate-200/50 px-3 py-1.5 rounded-xl w-fit">
-                      <Lock size={14} />
-                      <span className="text-[11px] font-bold">Currently unavailable</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-slate-400 bg-slate-50 px-3 py-1.5 rounded-xl w-fit">
-                      <RefreshCw size={14} className="animate-spin-slow" />
-                      <span className="text-[11px] font-bold">Pending integration</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col items-end gap-3">
-                  {connectedAccount ? (
-                    <button className="p-3 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-                      <RefreshCw size={20} />
-                    </button>
-                  ) : !p.unavailable && (
-                    <button 
-                      onClick={() => handleConnect(p.id)}
-                      disabled={isConnecting}
-                      className="px-6 py-3 tosca-bg text-white font-bold rounded-2xl shadow-lg shadow-teal-500/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all font-display"
-                    >
-                      {isConnecting ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
-                      {isConnecting ? 'Linking...' : 'Connect now'}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="absolute -bottom-6 -right-6 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                <Target size={120} />
-              </div>
-            </div>
-          );
-        })}
+      {/* PLATFORM CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        <PlatformCard 
+          platform={Platform.Meta} 
+          status="Connected" 
+          detail="1 ad account" 
+          onAction={() => {}}
+        />
+        <PlatformCard 
+          platform={Platform.Google} 
+          status="Connected" 
+          detail="1 ad account" 
+          onAction={() => {}}
+        />
+        <PlatformCard 
+          platform={Platform.TikTok} 
+          status="Not Connected" 
+          detail="Connect to sync campaigns" 
+          onAction={() => startConnect(Platform.TikTok)}
+        />
       </div>
 
-      <div className="bg-slate-900 rounded-[40px] p-12 text-white relative overflow-hidden">
-        <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <h2 className="text-3xl font-extrabold leading-tight font-display">Secure Multi platform <br/><span className="tosca-text font-extrabold">Ads Management</span></h2>
-            <p className="text-slate-400 text-sm leading-relaxed font-medium">We use enterprise grade encryption to store your access tokens. ZieAds never sees your plain text credentials. All requests are proxied through our secure edge network.</p>
-            <div className="flex gap-4">
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wide">Compliance</span>
-                <span className="text-sm font-bold">GDPR ready</span>
-              </div>
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wide">Security</span>
-                <span className="text-sm font-bold">SOC2 audited</span>
-              </div>
-            </div>
-          </div>
-          <div className="hidden md:flex justify-end">
-            <div className="w-64 h-64 relative">
-               <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full"></div>
-               <div className="relative glass-card border-white/10 p-8 rounded-3xl animate-float">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                       <Lock className="text-teal-400" size={32} />
-                       <div className="w-12 h-1 bg-white/10 rounded"></div>
-                    </div>
-                    <div className="h-4 bg-white/5 rounded w-full"></div>
-                    <div className="h-4 bg-white/5 rounded w-3/4"></div>
-                    <div className="pt-4 flex gap-2">
-                       <div className="w-3 h-3 rounded-full bg-teal-500"></div>
-                       <div className="w-3 h-3 rounded-full bg-teal-500/50"></div>
-                       <div className="w-3 h-3 rounded-full bg-teal-500/20"></div>
-                    </div>
-                  </div>
-               </div>
-            </div>
+      {/* CONNECTED ACCOUNTS */}
+      <section className="space-y-6">
+        <h2 className="text-lg font-semibold text-white">Your connected accounts</h2>
+        <div className="bg-[#1E293B] border border-[#334155] rounded-xl overflow-hidden shadow-sm">
+          <div className="divide-y divide-[#334155]">
+            <AccountListItem 
+              platform={Platform.Meta}
+              name="Global Retail Main"
+              campaigns={12}
+              creatives={84}
+              lastSync="2m ago"
+            />
+            <AccountListItem 
+              platform={Platform.Google}
+              name="Search Performance Max"
+              campaigns={5}
+              creatives={22}
+              lastSync="15m ago"
+            />
           </div>
         </div>
+      </section>
+
+      {/* CONNECT FLOW MODAL */}
+      <AnimatePresence>
+        {showConnectModal && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closePortal}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+            />
+            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 pl-[240px] pointer-events-none">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="pointer-events-auto w-full max-w-[500px] bg-[#1E293B] border border-[#334155] rounded-xl shadow-2xl overflow-hidden p-10 text-center"
+              >
+                <button 
+                  onClick={closePortal} 
+                  className="absolute top-6 right-6 p-2 text-[#94A3B8] hover:text-white rounded-lg"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="space-y-8 py-4">
+                  {connectStep === 'initial' && (
+                    <>
+                      <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-white/5 border border-white/10">
+                        <PlatformIcon platform={activePlatform!} size={32} />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-xl font-bold text-white">Connect your {activePlatform} Ads account</h3>
+                        <p className="text-sm text-[#94A3B8]">We'll sync your campaigns and enable AI optimization.</p>
+                      </div>
+                      <button 
+                        onClick={nextStep}
+                        className="w-full bg-[#8B5CF6] text-white py-4 rounded-xl font-bold text-base hover:bg-[#7C3AED] transition-all flex items-center justify-center gap-2"
+                      >
+                        Continue to {activePlatform} <ArrowRight size={18} />
+                      </button>
+                    </>
+                  )}
+
+                  {connectStep === 'select' && (
+                    <>
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-bold text-white">Select accounts to connect</h3>
+                        <div className="space-y-2 text-left">
+                          <SelectionRow label={`${activePlatform} Retail Main`} id="ACT_102938" />
+                          <SelectionRow label={`${activePlatform} Growth Scaling`} id="ACT_5521" />
+                          <SelectionRow label="Legacy Archive" id="ACT_0093" disabled />
+                        </div>
+                      </div>
+                      <button 
+                        onClick={nextStep}
+                        className="w-full bg-[#8B5CF6] text-white py-4 rounded-xl font-bold text-base hover:bg-[#7C3AED] transition-all"
+                      >
+                        Connect Selected
+                      </button>
+                    </>
+                  )}
+
+                  {connectStep === 'success' && (
+                    <>
+                      <div className="w-16 h-16 mx-auto bg-[#10B981]/10 text-[#10B981] rounded-full flex items-center justify-center">
+                        <CheckCircle2 size={40} />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-xl font-bold text-white">Successfully connected!</h3>
+                        <p className="text-sm text-[#94A3B8]">Your campaigns will appear in 2-3 minutes.</p>
+                      </div>
+                      <button 
+                        onClick={closePortal}
+                        className="w-full bg-[#8B5CF6] text-white py-4 rounded-xl font-bold text-base hover:bg-[#7C3AED] transition-all"
+                      >
+                        Go to Dashboard
+                      </button>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// --- SUB-COMPONENTS ---
+
+const PlatformCard = ({ platform, status, detail, onAction }: any) => {
+  const isConnected = status === 'Connected';
+  return (
+    <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-8 flex flex-col items-center text-center space-y-6 shadow-sm">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg ${
+        platform === Platform.Meta ? 'bg-[#3B82F6]' : 
+        platform === Platform.Google ? 'bg-[#EF4444]' : 'bg-black'
+      }`}>
+        <PlatformIcon platform={platform} size={28} />
+      </div>
+
+      <div className="space-y-1">
+        <h3 className="text-lg font-bold text-white">{platform} Ads</h3>
+        <div className="flex items-center justify-center gap-1.5">
+          {isConnected ? (
+            <CheckCircle2 size={14} className="text-[#10B981]" />
+          ) : (
+            <Circle size={14} className="text-[#94A3B8]" />
+          )}
+          <span className={`text-sm font-medium ${isConnected ? 'text-[#10B981]' : 'text-[#94A3B8]'}`}>{status}</span>
+        </div>
+      </div>
+
+      <p className="text-sm text-[#94A3B8]">{detail}</p>
+
+      <div className="flex gap-2 w-full">
+        {isConnected ? (
+          <>
+            <button className="flex-1 py-2.5 bg-white/5 border border-[#334155] rounded-lg text-sm font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-1.5">
+              Manage <ChevronRight size={14} />
+            </button>
+            <button className="px-3 py-2.5 bg-white/5 border border-[#334155] rounded-lg text-[#94A3B8] hover:text-white hover:bg-white/10 transition-all">
+              <RefreshCw size={16} />
+            </button>
+          </>
+        ) : (
+          <button 
+            onClick={onAction}
+            className="w-full py-2.5 bg-white/5 border border-[#334155] rounded-lg text-sm font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-1.5"
+          >
+            Connect {platform} <ArrowRight size={14} />
+          </button>
+        )}
       </div>
     </div>
   );
 };
+
+const AccountListItem = ({ platform, name, campaigns, creatives, lastSync }: any) => (
+  <div className="px-6 py-5 flex flex-wrap items-center gap-4 group hover:bg-white/5 transition-all">
+    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white shrink-0 ${
+      platform === Platform.Meta ? 'bg-[#3B82F6]' : 'bg-[#EF4444]'
+    }`}>
+      <PlatformIcon platform={platform} size={20} />
+    </div>
+    
+    <div className="flex-1 min-w-[200px]">
+      <div className="flex items-center gap-2">
+        <span className="text-base font-semibold text-white">{name}</span>
+        <span className="text-xs text-[#94A3B8]">| {platform}</span>
+      </div>
+    </div>
+
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-[#94A3B8]">
+      <span>{campaigns} campaigns</span>
+      <span>{creatives} creatives</span>
+      <span className="flex items-center gap-1.5">Synced {lastSync}</span>
+    </div>
+
+    <div className="flex items-center gap-2 ml-auto shrink-0">
+      <button className="p-2 text-[#94A3B8] hover:text-white transition-colors">
+        <RefreshCw size={16} />
+      </button>
+      <button className="p-2 text-[#94A3B8] hover:text-red-400 transition-colors">
+        <Trash2 size={16} />
+      </button>
+    </div>
+  </div>
+);
+
+const PlatformIcon = ({ platform, size = 16 }: { platform: Platform, size?: number }) => {
+  switch (platform) {
+    case Platform.Meta: return <span className="font-black" style={{ fontSize: size }}>M</span>;
+    case Platform.Google: return <span className="font-black" style={{ fontSize: size }}>G</span>;
+    case Platform.TikTok: return <span className="font-black" style={{ fontSize: size }}>T</span>;
+    default: return null;
+  }
+};
+
+const SelectionRow = ({ label, id, disabled }: any) => (
+  <label className={`flex items-center justify-between p-4 rounded-xl border border-[#334155] cursor-pointer transition-all ${disabled ? 'opacity-50 grayscale pointer-events-none' : 'hover:bg-white/5'}`}>
+    <div className="space-y-0.5">
+      <p className="text-sm font-semibold text-white">{label}</p>
+      <p className="text-[10px] text-[#94A3B8] font-mono">{id}</p>
+    </div>
+    <div className={`w-5 h-5 rounded border border-[#334155] flex items-center justify-center transition-all ${!disabled && 'group-hover:border-[#8B5CF6]'}`}>
+       {!disabled && <CheckCircle2 size={14} className="text-[#8B5CF6] opacity-0 group-hover:opacity-100" />}
+    </div>
+  </label>
+);
 
 export default AdAccountConnector;

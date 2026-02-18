@@ -4,10 +4,12 @@ import {
   ArrowLeft, ArrowRight, Zap, Target, Send, Loader2, Globe, Sparkles, Plus, Calendar, MapPin, X, MessageCircle, MoreHorizontal, ThumbsUp, Heart, Share2, Video,
   CheckCircle2, ChevronRight, Eye, RefreshCw, Sliders, Maximize2, Check, Box, Layout, Smartphone
 } from 'lucide-react';
-import { Platform, CampaignObjective, BrandProfile, AdCreative, Campaign, CampaignType } from '../types';
-import { generateHybridAdCreative, generateImageForAd, HybridAdCreative, CanvasLayer } from '../services/geminiService';
-import { orchestrateCampaignPublish } from '../services/dbService';
 import { useNavigate } from 'react-router-dom';
+// Corrected import from CampaignType to Campaign
+import { Platform, CampaignObjective, BrandProfile, AdCreative, Campaign, CampaignStatus, CreativeType, CreativeStatus } from '../types';
+import { generateHybridAdCreative, generateImageForAd, HybridAdCreative, CanvasLayer } from '../services/geminiService';
+// orchestrateCampaignPublish is now exported from dbService
+import { orchestrateCampaignPublish } from '../services/dbService';
 
 interface CampaignBuilderProps {
   brandProfile: BrandProfile | null;
@@ -23,10 +25,10 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
   // Delivery Configuration
   const [projectName, setProjectName] = useState(brandProfile?.name || 'New Campaign');
   const [region, setRegion] = useState('Indonesia');
-  const [startDate, setStartDate] = useState('2026-02-14 09:15');
-  const [endDate, setEndDate] = useState('2026-02-21 09:15');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState('');
   
-  // Ad Content Inputs (Updated for the new module)
+  // Ad Content Inputs
   const [productName, setProductName] = useState('');
   const [coreBenefit, setCoreBenefit] = useState('');
   const [platform, setPlatform] = useState<string>('Meta/Instagram Feed');
@@ -125,33 +127,45 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
       const campaignToPublish = {
         workspace_id: workspaceId,
         name: projectName,
-        type: CampaignType.SmartMulti,
-        platforms: [Platform.Meta],
-        objective,
-        audience: audienceDesc,
-        budget: 50,
-        duration: 7,
-        startDate,
-        endDate,
-        region
+        platform: Platform.Meta,
+        objective: objective,
+        budget_daily: 50,
+        start_date: startDate,
+        end_date: endDate || undefined,
+        settings: { region: region }
       };
       
+      // Fixed: Mapped creatives properly to satisfy AdCreative interface
       const flattenedCreatives = approvedPlans.map(p => {
         const headlineLayer = p.canvas_layers.find(l => l.id === 'headline');
         const subHeadlineLayer = p.canvas_layers.find(l => l.id === 'sub_headline');
         const ctaLayer = p.canvas_layers.find(l => l.id === 'cta_button');
-        return {
+        
+        const creative: AdCreative = {
+          id: Math.random().toString(36).substr(2, 9),
+          workspace_id: workspaceId,
+          name: `${projectName} Variant`,
           platform: Platform.Meta,
+          type: CreativeType.Image,
           headline: headlineLayer?.content || '',
-          primaryText: subHeadlineLayer?.content || '',
-          cta: ctaLayer?.content || 'Learn More',
-          imageUrl: p.imageUrl,
-          predictedCTR: p.predictedCTR
-        } as AdCreative;
+          description: subHeadlineLayer?.content || '',
+          cta_text: ctaLayer?.content || 'Learn More',
+          asset_urls: [p.imageUrl],
+          predicted_ctr: p.predictedCTR / 100,
+          predicted_score: Math.floor(p.predictedCTR * 10),
+          ai_generated: true,
+          status: 'active' as CreativeStatus,
+          metadata: {
+            style: 'Modern/Minimalist'
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        return creative;
       });
 
       const published = await orchestrateCampaignPublish(campaignToPublish, flattenedCreatives);
-      onComplete(published as any);
+      onComplete(published as Campaign);
       navigate('/campaigns');
     } catch (e: any) {
       alert("Deployment failed: " + (e.message || "Unknown error"));
@@ -214,16 +228,15 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
             </div>
 
             <div className="space-y-2">
-               <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 block">Target Platform</label>
-               <div className="grid grid-cols-3 gap-3">
-                  {['Meta/Instagram Feed', 'Instagram Story', 'Google Display'].map(p => (
+               <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 block">Objective</label>
+               <div className="grid grid-cols-2 gap-3">
+                  {[CampaignObjective.Sales, CampaignObjective.Awareness, CampaignObjective.Leads, CampaignObjective.Traffic].map(obj => (
                     <button 
-                      key={p}
-                      onClick={() => setPlatform(p)}
-                      className={`py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-tight border transition-all flex flex-col items-center gap-2 ${platform === p ? 'tosca-bg text-white border-primary shadow-lg shadow-teal-500/10' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-100 dark:border-slate-700 hover:bg-slate-50'}`}
+                      key={obj}
+                      onClick={() => setObjective(obj)}
+                      className={`py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-tight border transition-all flex items-center justify-center gap-2 ${objective === obj ? 'tosca-bg text-white border-primary' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-100 dark:border-slate-700 hover:bg-slate-50'}`}
                     >
-                      {p === 'Instagram Story' ? <Smartphone size={16} /> : <Layout size={16} />}
-                      {p}
+                      {obj}
                     </button>
                   ))}
                </div>
@@ -273,9 +286,9 @@ const CampaignBuilder: React.FC<CampaignBuilderProps> = ({ brandProfile, onCompl
                   </div>
                </div>
                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 block">Schedule</label>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 block">Start Date</label>
                   <div className="relative">
-                    <input type="text" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full h-12 pl-10 pr-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-xs font-bold dark:text-white outline-none focus:border-primary" />
+                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full h-12 pl-10 pr-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-xs font-bold dark:text-white outline-none focus:border-primary" />
                     <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   </div>
                </div>

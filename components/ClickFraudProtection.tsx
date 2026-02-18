@@ -1,289 +1,458 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  ShieldAlert, 
-  ShieldCheck, 
-  Info, 
-  Ban, 
-  RefreshCw, 
-  ExternalLink,
-  Zap,
-  Fingerprint,
-  Globe,
-  Loader2,
-  Code2,
-  Copy,
-  CheckCircle2,
-  MousePointerClick,
-  Clock
+  Plus, Trash2, Edit2, History as HistoryIcon, 
+  CheckCircle2, AlertCircle, X, ChevronDown, 
+  Lightbulb, Shield, Zap, Search, MoreHorizontal, Loader2, Undo2
 } from 'lucide-react';
-import { ClickLog, FraudSummary, Platform } from '../types';
-import { fetchClickLogs, fetchFraudSummary } from '../services/dbService';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { 
+  listOptimizationRules, 
+  createOptimizationRule, 
+  toggleOptimizationRule, 
+  deleteOptimizationRule,
+  fetchOptimizationSuggestions,
+  applyOptimizationSuggestion,
+  fetchOptimizationHistory,
+  revertOptimizationAction
+} from '../services/dbService';
+import { OptimizationRule, OptimizationAction, OptimizationSuggestion } from '../types';
+
+type AutoTab = 'Active Rules' | 'Suggestions' | 'History' | 'Safety';
+
+const sparkData = [20, 35, 25, 45, 30, 55, 42];
 
 const ClickFraudProtection: React.FC = () => {
-  const [logs, setLogs] = useState<ClickLog[]>([]);
-  const [summary, setSummary] = useState<FraudSummary | null>(null);
+  const [activeTab, setActiveTab] = useState<AutoTab>('Active Rules');
+  const [showNewRuleModal, setShowNewRuleModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [workspaceId] = useState('zieads-root-master'); // Mocked for now
+
+  const [rules, setRules] = useState<OptimizationRule[]>([]);
+  const [suggestions, setSuggestions] = useState<OptimizationSuggestion[]>([]);
+  const [history, setHistory] = useState<OptimizationAction[]>([]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'Active Rules') {
+        const data = await listOptimizationRules(workspaceId);
+        setRules(data);
+      } else if (activeTab === 'Suggestions') {
+        const data = await fetchOptimizationSuggestions(workspaceId);
+        setSuggestions(data);
+      } else if (activeTab === 'History') {
+        const data = await fetchOptimizationHistory(workspaceId);
+        setHistory(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [logsData, summaryData] = await Promise.all([
-          fetchClickLogs('current_business'),
-          fetchFraudSummary('current_business')
-        ]);
-        setLogs(logsData);
-        setSummary(summaryData);
-      } catch (e) {
-        console.error("Error loading fraud data:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
-  }, []);
+  }, [activeTab]);
 
-  const handleSync = () => {
-    setSyncing(true);
-    setTimeout(() => setSyncing(false), 2000);
+  const handleToggleRule = async (ruleId: string, currentStatus: boolean) => {
+    try {
+      await toggleOptimizationRule(ruleId, !currentStatus);
+      setRules(rules.map(r => r.id === ruleId ? { ...r, is_active: !currentStatus } : r));
+    } catch (err) {
+      alert("Failed to toggle rule");
+    }
   };
 
-  const copyScript = () => {
-    const script = `<script src="https://cdn.zieads.com/tracker.js" data-id="ZA-8821-X" async></script>`;
-    navigator.clipboard.writeText(script);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleDeleteRule = async (ruleId: string) => {
+    if (!confirm("Are you sure?")) return;
+    try {
+      await deleteOptimizationRule(ruleId);
+      setRules(rules.filter(r => r.id !== ruleId));
+    } catch (err) {
+      alert("Failed to delete rule");
+    }
   };
 
-  if (loading || !summary) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-20 space-y-4 font-sans bg-slate-50 dark:bg-slate-950 transition-colors">
-        <Loader2 size={40} className="animate-spin text-primary" />
-        <p className="text-slate-400 dark:text-slate-500 font-bold tracking-tight text-sm">Syncing threat intelligence...</p>
-      </div>
-    );
-  }
+  const handleApplySuggestion = async (suggestionId: string) => {
+    try {
+      await applyOptimizationSuggestion(suggestionId);
+      setSuggestions(suggestions.map(s => s.id === suggestionId ? { ...s, is_applied: true } : s));
+    } catch (err) {
+      alert("Failed to apply suggestion");
+    }
+  };
+
+  const handleRevertAction = async (actionId: string) => {
+    try {
+      await revertOptimizationAction(actionId);
+      setHistory(history.map(a => a.id === actionId ? { ...a, reverted_at: new Date().toISOString() } : a));
+    } catch (err) {
+      alert("Failed to revert action");
+    }
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 font-sans">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-5">
-          <div className="w-14 h-14 rounded-2xl tosca-bg flex items-center justify-center text-white shadow-2xl shadow-teal-500/30">
-             <ShieldAlert size={28} />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white font-display tracking-tight leading-none mb-1 transition-colors">Click fraud protection</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Monitoring device fingerprints and behavioral patterns 24/7.</p>
-          </div>
+    <div className="bg-[#0F172A] min-h-full p-6 text-[#F8FAFC] font-sans">
+      {/* HEADER */}
+      <header className="flex items-center justify-between mb-8">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-white">Automation Rules</h1>
+          <p className="text-sm text-[#94A3B8]">Set up AI to manage your campaigns</p>
         </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-sm"
-          >
-             <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> 
-             {syncing ? 'Syncing...' : 'Sync blocks'}
-          </button>
-          <button className="px-6 py-2.5 tosca-bg text-white rounded-xl text-sm font-bold shadow-xl shadow-teal-500/20 hover:scale-105 active:scale-95 transition-all">
-             Global settings
-          </button>
-        </div>
+        <button 
+          onClick={() => setShowNewRuleModal(true)}
+          className="bg-[#8B5CF6] text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-[#7C3AED] transition-all flex items-center gap-2 shadow-lg shadow-[#8B5CF6]/10"
+        >
+          <Plus size={18} /> New Rule
+        </button>
       </header>
 
-      {/* Hero Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricBox 
-          label="Scanned clicks" 
-          value={summary.totalScannedClicks.toLocaleString()} 
-          color="#1E293B" 
-          icon={<Globe size={18} />}
-        />
-        <MetricBox 
-          label="Fraud blocked" 
-          value={summary.totalFraudBlocked.toLocaleString()} 
-          color="#EF4444" 
-          icon={<Ban size={18} />}
-        />
-        <MetricBox 
-          label="Excluded IPs" 
-          value={summary.excludedIpsCount.toLocaleString()} 
-          color="#F97316" 
-          icon={<Fingerprint size={18} />}
-        />
-        <MetricBox 
-          label="Money saved" 
-          value={`$${summary.moneySaved.toLocaleString()}`} 
-          color="#14B8A6" 
-          icon={<Zap size={18} />}
-        />
+      {/* TABS */}
+      <div className="flex gap-8 border-b border-[#334155] mb-8">
+        {(['Active Rules', 'Suggestions', 'History', 'Safety'] as AutoTab[]).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-4 text-sm font-medium transition-all relative ${
+              activeTab === tab ? 'text-white' : 'text-[#94A3B8] hover:text-white'
+            }`}
+          >
+            {tab}
+            {activeTab === tab && (
+              <motion.div layoutId="auto-tab-line" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B5CF6]" />
+            )}
+          </button>
+        ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-         {/* Recent History Table */}
-         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors">
-            <div className="p-7 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-               <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display tracking-tight transition-colors">Recent click logs</h3>
-               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-500/10 rounded-full border border-green-100 dark:border-green-500/20 transition-colors">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span className="text-[11px] font-bold text-green-700 dark:text-green-400 tracking-tight">Live behavioral analysis</span>
-               </div>
-            </div>
-            <div className="overflow-x-auto">
-               <table className="w-full text-left">
-                  <thead className="bg-slate-50/50 dark:bg-slate-800/50 text-[11px] font-bold tracking-tight text-slate-400 dark:text-slate-500">
-                     <tr>
-                        <th className="px-7 py-4">Threat type</th>
-                        <th className="px-7 py-4">IP Address</th>
-                        <th className="px-7 py-4">Platform</th>
-                        <th className="px-7 py-4">Detected</th>
-                        <th className="px-7 py-4"></th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                     {logs.map(log => (
-                        <tr key={log.id} className="text-[13px] font-medium hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
-                           <td className="px-7 py-5">
-                              <span className="flex items-center gap-2.5 font-bold text-slate-700 dark:text-slate-300 font-display">
-                                 <div className={`w-2 h-2 rounded-full ${log.threatType === 'Bot Behavior' ? 'bg-red-500' : 'bg-orange-500'}`}></div>
-                                 {log.threatType}
-                              </span>
-                           </td>
-                           <td className="px-7 py-5 text-slate-500 dark:text-slate-400 font-mono tracking-tight">{log.ipAddress}</td>
-                           <td className="px-7 py-5">
-                              <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-400 tracking-tight transition-colors">
-                                 {log.platform}
-                              </span>
-                           </td>
-                           <td className="px-7 py-5 text-slate-400 dark:text-slate-500">{log.timestamp}</td>
-                           <td className="px-7 py-5 text-right">
-                              <button className="p-2 rounded-lg text-slate-300 dark:text-slate-600 hover:text-primary dark:hover:text-teal-400 transition-all">
-                                 <ExternalLink size={16} />
-                              </button>
-                           </td>
-                        </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </div>
-            <div className="mt-auto p-4 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 text-center transition-colors">
-               <button className="text-[12px] font-bold text-slate-400 dark:text-slate-500 hover:text-primary dark:hover:text-teal-400 transition-colors tracking-tight">View deep analysis report</button>
-            </div>
-         </div>
+      <div className="max-w-[1200px] mx-auto space-y-6">
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center space-y-4">
+             <Loader2 size={32} className="animate-spin text-[#8B5CF6]" />
+             <p className="text-sm text-[#94A3B8] font-bold uppercase tracking-widest">Scanning automation hub...</p>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'Active Rules' && (
+              <>
+                <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-6 flex items-center justify-between shadow-sm">
+                  <div className="space-y-2 flex-1">
+                    <p className="text-sm font-medium text-[#94A3B8]">Total Executions</p>
+                    <div className="flex items-end gap-4">
+                      <span className="text-[48px] font-bold text-white leading-none">
+                        {rules.reduce((acc, r) => acc + r.execution_count, 0)}
+                      </span>
+                      <div className="h-12 w-32 mb-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={sparkData.map((v, i) => ({ v, i }))}>
+                            <Area type="monotone" dataKey="v" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.1} strokeWidth={2} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    <div className="pt-4 border-t border-[#334155] flex items-center gap-3 text-xs font-medium text-[#94A3B8]">
+                      <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-[#10B981]" /> Deployment engine healthy</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Status: Active</span>
+                    </div>
+                  </div>
+                </div>
 
-         <div className="space-y-6">
-            {/* Tracking Script Onboarding */}
-            <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm p-8 space-y-6 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-500/10 text-primary dark:text-teal-400 flex items-center justify-center">
-                  <Code2 size={20} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {rules.length > 0 ? rules.map(rule => (
+                    <RuleCard 
+                      key={rule.id}
+                      rule={rule}
+                      onToggle={() => handleToggleRule(rule.id, rule.is_active)}
+                      onDelete={() => handleDeleteRule(rule.id)}
+                    />
+                  )) : (
+                    <div className="col-span-full py-20 text-center space-y-4">
+                      <Zap size={48} className="mx-auto text-slate-700" />
+                      <p className="text-slate-400">No active rules found. Set one up to start saving time.</p>
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display transition-colors">Install tracking code</h3>
+              </>
+            )}
+
+            {activeTab === 'Suggestions' && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-semibold text-white">AI Engine Signals:</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {suggestions.length > 0 ? suggestions.map(s => (
+                    <SuggestionCard 
+                      key={s.id}
+                      suggestion={s}
+                      onApply={() => handleApplySuggestion(s.id)}
+                    />
+                  )) : (
+                    <div className="col-span-full py-20 text-center space-y-4">
+                      <Lightbulb size={48} className="mx-auto text-slate-700" />
+                      <p className="text-slate-400">Awaiting more performance data to generate high-confidence signals.</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                Paste this script into the <code>&lt;head&gt;</code> of your website to enable sidik jari perangkat and behavioral monitoring.
-              </p>
-              <div className="relative group">
-                <div className="w-full bg-slate-900 dark:bg-slate-950 text-teal-400 p-5 rounded-2xl font-mono text-[11px] break-all border border-slate-800 dark:border-slate-800 leading-relaxed group-hover:bg-slate-800 dark:group-hover:bg-slate-900 transition-colors">
-                  &lt;script src="https://cdn.zieads.com/tracker.js" data-id="ZA-8821-X" async&gt;&lt;/script&gt;
+            )}
+
+            {activeTab === 'History' && (
+              <div className="bg-[#1E293B] border border-[#334155] rounded-xl overflow-hidden shadow-sm">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-[#334155]">
+                      <th className="px-6 py-4 text-xs font-semibold text-[#94A3B8] uppercase">Time</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#94A3B8] uppercase">Action</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#94A3B8] uppercase">Campaign</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#94A3B8] uppercase">Trigger</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#94A3B8] uppercase">Result</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-[#94A3B8] uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#334155]/50">
+                    {history.length > 0 ? history.map(item => (
+                      <HistoryRow 
+                        key={item.id} 
+                        item={item} 
+                        onRevert={() => handleRevertAction(item.id)}
+                      />
+                    )) : (
+                      <tr>
+                        <td colSpan={6} className="py-20 text-center text-slate-500 italic">No automation logs recorded yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'Safety' && (
+          <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-8 space-y-10 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold text-white">Enable AI Automation</h3>
+                <p className="text-sm text-[#94A3B8]">Allow the system to make changes automatically based on your rules.</p>
+              </div>
+              <Toggle active={true} />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 pt-8 border-t border-[#334155]">
+              <div className="space-y-4">
+                <label className="text-sm font-medium text-white block">Max actions per day</label>
+                <input type="number" defaultValue={50} className="w-full h-12 px-4 bg-[#0F172A] border border-[#334155] rounded-lg text-white outline-none focus:border-[#8B5CF6]" />
+              </div>
+              <div className="space-y-4">
+                <label className="text-sm font-medium text-white block">Email me about:</label>
+                <select className="w-full h-12 px-4 bg-[#0F172A] border border-[#334155] rounded-lg text-white outline-none">
+                  <option>All actions</option>
+                  <option>Important only</option>
+                  <option>None</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-10 border-t border-[#334155]">
+              <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-xl flex items-center justify-between">
+                <div className="space-y-1">
+                  <h4 className="text-base font-bold text-red-400">Kill switch</h4>
+                  <p className="text-sm text-[#94A3B8]">Stop all automation immediately across all campaigns.</p>
                 </div>
-                <button 
-                  onClick={copyScript}
-                  className="absolute top-3 right-3 p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all active:scale-95"
-                  title="Copy to clipboard"
-                >
-                  {copied ? <CheckCircle2 size={16} className="text-teal-400" /> : <Copy size={16} />}
+                <button className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-lg font-bold transition-all">
+                  Stop Everything
                 </button>
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 dark:text-slate-500">
-                <CheckCircle2 size={12} className="text-green-500 dark:text-green-400" />
-                <span>Device Fingerprinting enabled</span>
-              </div>
             </div>
-
-            {/* Automated Exclusions Card */}
-            <div className="bg-slate-900 dark:bg-slate-950 rounded-[32px] p-8 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20 transition-colors">
-               <div className="absolute top-0 right-0 w-32 h-32 tosca-bg/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000"></div>
-               <ShieldCheck className="text-teal-400 mb-6 group-hover:rotate-6 transition-transform" size={40} />
-               <h3 className="text-xl font-bold mb-3 font-display tracking-tight transition-colors">Automated exclusion sync</h3>
-               <p className="text-[13px] text-slate-400 leading-relaxed mb-8 font-medium transition-colors">Flagged IPs are automatically synced to Meta 'ip_exclusions' and Google 'IpBlock' lists every 15 minutes.</p>
-               
-               <div className="space-y-4 pt-6 border-t border-white/10 font-sans">
-                  <div className="flex justify-between items-center text-[12px] font-bold">
-                     <span className="text-slate-500">Exclusion status</span>
-                     <div className="flex items-center gap-1.5 text-green-400 bg-green-400/10 px-3 py-1 rounded-full">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                        <span>Active & Healthy</span>
-                     </div>
-                  </div>
-                  <div className="flex justify-between items-center text-[12px] font-bold">
-                     <span className="text-slate-500">Last 15m sync</span>
-                     <span className="text-teal-400 font-display transition-colors">Just now</span>
-                  </div>
-               </div>
-            </div>
-
-            <div className="p-8 bg-slate-50/50 dark:bg-slate-900/50 rounded-[32px] border border-slate-200 dark:border-slate-800 border-dashed relative group hover:bg-white dark:hover:bg-slate-900 transition-all">
-               <div className="flex items-center gap-3 mb-4 text-slate-900 dark:text-white font-bold font-display transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-blue-500 dark:text-blue-400 flex items-center justify-center">
-                     <Info size={18} />
-                  </div>
-                  <h4 className="tracking-tight">Threat thresholds</h4>
-               </div>
-               <div className="space-y-4">
-                 <ThresholdItem icon={<Clock size={14}/>} label="Repeated click" value="> 3 clicks in 60s" />
-                 <ThresholdItem icon={<MousePointerClick size={14}/>} label="Bot behavior" value="Headless signature" />
-                 <ThresholdItem icon={<ShieldCheck size={14}/>} label="Proxy/VPN" value="Known datacenter IPs" />
-               </div>
-            </div>
-         </div>
+          </div>
+        )}
       </div>
+
+      {/* NEW RULE MODAL */}
+      <AnimatePresence>
+        {showNewRuleModal && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowNewRuleModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
+            />
+            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 pl-[240px] pointer-events-none">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="pointer-events-auto w-full max-w-[600px] bg-[#1E293B] border border-[#334155] rounded-xl shadow-2xl overflow-hidden"
+              >
+                <div className="p-6 border-b border-[#334155] flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-white">Create Automation Rule</h2>
+                  <button onClick={() => setShowNewRuleModal(false)} className="p-2 text-[#94A3B8] hover:text-white rounded-lg">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                  {/* Step 1 */}
+                  <div className="space-y-4">
+                    <label className="text-xs font-bold text-[#8B5CF6] uppercase tracking-widest">Step 1: Condition</label>
+                    <p className="text-sm font-medium text-white">When this happens:</p>
+                    <select className="w-full h-12 px-4 bg-[#0F172A] border border-[#334155] rounded-lg text-white text-sm outline-none">
+                      <option>Cost per purchase (CPA) is more than $___</option>
+                      <option>Return on ad spend (ROAS) drops below ___</option>
+                      <option>Click rate (CTR) falls below ___%</option>
+                      <option>Daily spend goes over $___</option>
+                    </select>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="space-y-4">
+                    <label className="text-xs font-bold text-[#8B5CF6] uppercase tracking-widest">Step 2: Action</label>
+                    <p className="text-sm font-medium text-white">Do this:</p>
+                    <select className="w-full h-12 px-4 bg-[#0F172A] border border-[#334155] rounded-lg text-white text-sm outline-none">
+                      <option>Pause the campaign</option>
+                      <option>Increase budget by ___%</option>
+                      <option>Decrease budget by ___%</option>
+                      <option>Send an alert notification</option>
+                    </select>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="space-y-4">
+                    <label className="text-xs font-bold text-[#8B5CF6] uppercase tracking-widest">Step 3: Name & Scope</label>
+                    <input type="text" placeholder="Rule Name (e.g. Stop Waste)" className="w-full h-12 px-4 bg-[#0F172A] border border-[#334155] rounded-lg text-white text-sm" />
+                    <div className="flex items-center gap-3 pt-2">
+                       <input type="checkbox" checked readOnly className="w-4 h-4 rounded accent-[#8B5CF6]" />
+                       <span className="text-xs text-[#94A3B8]">Apply to all active campaigns</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-8 border-t border-[#334155] bg-[#111827]">
+                  <button 
+                    onClick={() => setShowNewRuleModal(false)}
+                    className="w-full bg-[#8B5CF6] text-white py-4 rounded-lg font-bold text-base shadow-xl shadow-[#8B5CF6]/10 hover:bg-[#7C3AED] transition-all"
+                  >
+                    Deploy Rule
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-const ThresholdItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) => (
-  <div className="flex items-center justify-between text-[11px]">
-    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold tracking-tight transition-colors">
-      {icon} {label}
+// --- Sub-components ---
+
+const RuleCard = ({ rule, onToggle, onDelete }: { rule: OptimizationRule, onToggle: () => void, onDelete: () => void }) => (
+  <div className={`bg-[#1E293B] border border-[#334155] rounded-xl p-6 space-y-6 shadow-sm relative group transition-all hover:border-[#8B5CF6]/50 ${!rule.is_active && 'opacity-60 grayscale-[0.5]'}`}>
+    <div className="flex justify-between items-start">
+      <h3 className="text-base font-semibold text-white">{rule.name}</h3>
+      <div onClick={onToggle}>
+        <Toggle active={rule.is_active} />
+      </div>
     </div>
-    <span className="text-slate-900 dark:text-slate-200 font-bold font-display transition-colors">{value}</span>
+    
+    <div className="space-y-2 py-2">
+      <p className="text-sm text-[#F8FAFC]">
+        <span className="font-bold">If</span> {rule.conditions.metric.toUpperCase()} {rule.conditions.operator} <span className="text-[#8B5CF6] font-bold">{rule.conditions.value}</span>
+      </p>
+      <p className="text-sm text-[#F8FAFC]">
+        <span className="font-bold">Then</span> {rule.actions.type} {rule.actions.value ? `(${rule.actions.value}%)` : ''}
+      </p>
+    </div>
+
+    <div className="pt-4 border-t border-[#334155] flex flex-col gap-1">
+      <div className="text-[12px] text-[#94A3B8]">Last ran: <span className="text-white">{rule.last_executed_at ? new Date(rule.last_executed_at).toLocaleString() : 'Never'}</span></div>
+      <div className="text-[12px] text-[#94A3B8]">Applied <span className="text-white">{rule.execution_count} times</span></div>
+    </div>
+
+    <div className="flex items-center gap-3 pt-2">
+      <button className="text-[12px] font-bold text-[#94A3B8] hover:text-[#8B5CF6] flex items-center gap-1.5"><Edit2 size={12} /> Edit</button>
+      <button className="text-[12px] font-bold text-[#94A3B8] hover:text-[#8B5CF6] flex items-center gap-1.5"><HistoryIcon size={12} /> View History</button>
+      <div className="flex-1"></div>
+      <button onClick={onDelete} className="p-2 text-[#94A3B8] hover:text-red-400"><Trash2 size={16} /></button>
+    </div>
   </div>
 );
 
-interface MetricBoxProps {
-  label: string;
-  value: string;
-  color: string;
-  icon: React.ReactNode;
-}
-
-const MetricBox: React.FC<MetricBoxProps> = ({ label, value, color, icon }) => {
-  return (
-    <div className="bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm relative group hover:shadow-xl transition-all duration-500 overflow-hidden">
-      <div 
-        className="absolute top-0 left-0 w-1.5 h-full opacity-0 group-hover:opacity-100 transition-opacity" 
-        style={{ backgroundColor: color }}
-      ></div>
-      <div className="flex items-center justify-between mb-5">
-         <p className="text-[12px] font-bold text-slate-400 dark:text-slate-500 tracking-tight font-sans uppercase opacity-60 transition-colors">{label}</p>
-         <div 
-            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110"
-            style={{ backgroundColor: `${color}10`, color: color }}
-         >
-            {icon}
-         </div>
-      </div>
-      <p className="text-3xl font-extrabold font-display tracking-tight text-slate-900 dark:text-white group-hover:translate-x-1 transition-all duration-300">{value}</p>
-      <div 
-        className="mt-5 h-1 w-12 rounded-full opacity-20" 
-        style={{ backgroundColor: color }}
-      ></div>
+const SuggestionCard = ({ suggestion, onApply }: { suggestion: OptimizationSuggestion, onApply: () => void }) => (
+  <div className={`bg-[#1E293B] border border-[#334155] rounded-xl p-6 space-y-6 shadow-sm border-l-4 border-l-[#8B5CF6] ${suggestion.is_applied && 'opacity-60 pointer-events-none'}`}>
+    <div className="flex items-center gap-2 text-[#8B5CF6]">
+      <Lightbulb size={18} />
+      <span className="text-xs font-bold uppercase tracking-widest">AI Performance Signal</span>
     </div>
-  );
-};
+    <div className="space-y-4">
+      <h4 className="text-base font-bold text-white">{suggestion.title}</h4>
+      <p className="text-sm text-[#F8FAFC] leading-relaxed">
+        {suggestion.description}
+      </p>
+      <div className="flex items-center justify-between p-3 bg-[#8B5CF6]/10 rounded-lg">
+         <span className="text-xs font-medium text-[#8B5CF6]">Expected Impact: {suggestion.expected_impact?.roas_change || 'N/A'} ROAS</span>
+         <span className="text-[10px] font-bold text-[#94A3B8]">Confidence: {(suggestion.confidence_score * 100).toFixed(0)}%</span>
+      </div>
+    </div>
+    <div className="flex gap-2">
+      <button 
+        onClick={onApply}
+        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+          suggestion.is_applied ? 'bg-teal-500/20 text-teal-400' : 'bg-[#8B5CF6] text-white hover:bg-[#7C3AED]'
+        }`}
+      >
+        {suggestion.is_applied ? 'Applied' : 'Apply Suggestion'}
+      </button>
+      <button className="px-4 py-2 text-[#94A3B8] text-xs font-bold hover:text-white transition-all">Dismiss</button>
+    </div>
+  </div>
+);
+
+const HistoryRow = ({ item, onRevert }: { item: OptimizationAction, onRevert: () => void }) => (
+  <tr className="hover:bg-[#0F172A]/50 transition-all group">
+    <td className="px-6 py-4 text-sm text-[#94A3B8]">{new Date(item.executed_at).toLocaleTimeString()}</td>
+    <td className="px-6 py-4">
+      <div className="flex flex-col">
+        <span className="text-sm font-semibold text-white capitalize">{item.action_type.replace('_', ' ')}</span>
+        <span className="text-[10px] text-slate-500 font-mono">ID: {item.id.slice(0, 8)}</span>
+      </div>
+    </td>
+    <td className="px-6 py-4 text-sm text-[#F8FAFC]">{item.campaign_name || 'Campaign'}</td>
+    <td className="px-6 py-4 text-[12px] text-[#94A3B8]">
+      {item.triggered_by?.metric} {item.triggered_by?.operator} {item.triggered_by?.threshold}
+    </td>
+    <td className="px-6 py-4">
+      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+        item.result === 'success' ? 'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/20' : 'text-red-400 bg-red-400/10 border-red-400/20'
+      }`}>
+        {item.result}
+      </span>
+    </td>
+    <td className="px-6 py-4">
+      {item.action_type !== 'alert' && !item.reverted_at && (
+        <button 
+          onClick={onRevert}
+          className="p-2 text-[#94A3B8] hover:text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded-lg transition-all flex items-center gap-1 text-xs"
+        >
+          <Undo2 size={14} /> Undo
+        </button>
+      )}
+      {item.reverted_at && (
+        <span className="text-[10px] text-slate-500 italic">Reverted</span>
+      )}
+    </td>
+  </tr>
+);
+
+const Toggle = ({ active }: { active: boolean }) => (
+  <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-all ${active ? 'bg-[#8B5CF6]' : 'bg-[#334155]'}`}>
+    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${active ? 'right-0.5' : 'left-0.5'}`}></div>
+  </div>
+);
 
 export default ClickFraudProtection;
