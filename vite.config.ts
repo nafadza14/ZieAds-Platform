@@ -7,9 +7,9 @@ export default defineConfig(({ mode }) => {
   
   return {
     plugins: [react()],
-    base: './',
+    base: '/',
     define: {
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY || ''),
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
       'process.env.SUPABASE_URL': JSON.stringify(env.SUPABASE_URL || 'https://uiolzgpqxvswwslkmpip.supabase.co'),
       'process.env.SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY || 'sb_publishable_YwBdOXh2_3imaD8o1wyT3g_U-1I3Isf'),
     },
